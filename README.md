@@ -4,8 +4,10 @@ Turn text into short tones, each one of four pitches, and back again. A message 
 as sound and read back by ear with the codebook as notes, or decoded by the tool from a MIDI
 file, a recording or live sound.
 
-**Try it:** open [`four-tone-code.html`](four-tone-code.html) in Chrome, Edge or Firefox, or use
-the hosted page (GitHub Pages). It's a single file with no build step.
+**Try it live: https://golovan.github.io/four-tone-code/**
+
+Or download [`four-tone-code.html`](four-tone-code.html) and open it in Chrome, Edge or Firefox.
+It's a single file with no build step.
 
 **Read the guide:** [Four-Tone-Code-Guide.pdf](Four-Tone-Code-Guide.pdf) explains the theory
 behind the code and how to use the tool, and ends with a one-page reference card.

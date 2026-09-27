@@ -5,7 +5,11 @@ A single-page tool (`four-tone-code.html`, no build step) that turns text into s
 It plays the code, saves it as MIDI / zip / MP3, and decodes MIDI files, recordings,
 the microphone, or the page's own playback back into text.
 
-- Published as a private claude.ai artifact: https://claude.ai/artifact/F5Z2nbbBbYnFfdmkSr8BGy
+- GitHub (public): https://github.com/golovan/four-tone-code. GitHub Pages serves `main` at
+  https://golovan.github.io/four-tone-code/, where `index.html` forwards to the tool. There,
+  the microphone and direct .mid/.mp3 downloads work. Commits use the repo-local identity
+  `Yevhenii Holovan <20478245+golovan@users.noreply.github.com>`.
+- Also published as a private claude.ai artifact: https://claude.ai/artifact/F5Z2nbbBbYnFfdmkSr8BGy
   (declares the `downloads` capability).
 - `sample.txt` is the user's saved copy of the 1,000-character test passage; don't modify it.
 
@@ -17,7 +21,8 @@ the microphone, or the page's own playback back into text.
 - Verify before reporting: run the tests below, and check real behaviour in the browser pane.
   Report numbers, and say what wasn't tested (e.g. real microphone, the published page's
   downloads).
-- After changing the page, republish the artifact (keep the same URL).
+- After changing the page, republish the artifact (keep the same URL). Commit and push only
+  when asked; Pages then updates by itself in about a minute.
 
 ## The code
 - **Pitch sets:** Fifths A3 E4 B4 F♯5 (MIDI 57 64 71 78, default), or Do–mi–sol–do' C4 E4 G4 C5
