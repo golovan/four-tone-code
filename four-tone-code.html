@@ -1,0 +1,1962 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>Four-Tone Code</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #EEF1F0;
+    --surface: #FBFCFC;
+    --ink: #131C19;
+    --muted: #56655F;
+    --line: #D3DBD8;
+    --lane: #E1E7E5;
+    --hl: #DCE5F6;
+    --p1: #3949A3;
+    --p2: #12837A;
+    --p3: #C08312;
+    --p4: #CF4A33;
+    --btn: #131C19;
+    --btn-ink: #FBFCFC;
+    --warn: #8A5200;
+    --focus: #3949A3;
+    --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0E1412; --surface: #161E1B; --ink: #E3EBE7; --muted: #93A39D;
+      --line: #2A3531; --lane: #232D2A; --hl: #23304A;
+      --p1: #8C9AF2; --p2: #4CC4B5; --p3: #EDB443; --p4: #F2826B;
+      --btn: #E3EBE7; --btn-ink: #0E1412; --warn: #E8B04A; --focus: #8C9AF2;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0E1412; --surface: #161E1B; --ink: #E3EBE7; --muted: #93A39D;
+    --line: #2A3531; --lane: #232D2A; --hl: #23304A;
+    --p1: #8C9AF2; --p2: #4CC4B5; --p3: #EDB443; --p4: #F2826B;
+    --btn: #E3EBE7; --btn-ink: #0E1412; --warn: #E8B04A; --focus: #8C9AF2;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.5 var(--body);
+    padding-inline: clamp(16px, 2.5vw, 40px);
+    padding-block: 28px 48px;
+  }
+  .wrap { display: grid; gap: 20px; }
+
+  /* One bar: the name on the left, the four pitches on the right. */
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 32px; }
+  .brand { display: grid; gap: 4px; }
+  .tagline { margin: 0; color: var(--muted); }
+  .pitch-box { display: grid; gap: 6px; justify-items: end; }
+  .pitch-hint { font-size: 12px; color: var(--muted); }
+  @media (max-width: 760px) { .pitch-box { justify-items: start; } }
+  h1 {
+    font: 700 clamp(28px, 5vw, 40px)/1.05 var(--display);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .lede { margin: 0; max-width: 62ch; color: var(--muted); }
+  h2 {
+    font: 600 19px/1.2 var(--display);
+    margin: 0;
+  }
+  .label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted);
+  }
+
+  .pitches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pitch {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px 6px 8px;
+    border: 1px solid var(--line); border-radius: 999px;
+    background: var(--surface); color: var(--ink);
+    font: 13px var(--mono); cursor: pointer;
+  }
+  .pitch:hover { border-color: var(--muted); }
+  .pitch b {
+    display: inline-grid; place-items: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    color: var(--surface); font-weight: 600;
+  }
+  .pitch span { color: var(--muted); }
+
+  .main { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  /* Encode and Decode share a row and its height; a folded section keeps its own. */
+  @media (min-width: 900px) { .main { grid-template-columns: 1.55fr 1fr; align-items: stretch; } }
+  .main > .panel { align-content: start; }
+  .main > .panel.collapsed { align-self: start; }
+  /* Decode is a column whose text box takes the spare height. */
+  .panel.decode { display: flex; flex-direction: column; }
+  .panel.decode > .grow { flex: 1 1 auto; display: flex; min-height: 6em; }
+  .panel.decode > .grow .decoded { flex: 1; max-height: 460px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 18px;
+    display: grid; gap: 16px;
+    min-width: 0;
+  }
+  .field { display: grid; gap: 6px; }
+  textarea, input, select {
+    font: inherit; color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 10px;
+  }
+  textarea { font: 16px/1.4 var(--mono); resize: vertical; min-height: 64px; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .settings { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .settings .field { min-width: 0; }
+  .settings input { width: 100%; font-variant-numeric: tabular-nums; }
+  .settings select { width: 100%; }
+  /* Decode's pitch set, speed and code length share one row (pitch set names are longest). */
+  .panel.decode { container-type: inline-size; }
+  @container (min-width: 440px) { .dec-settings { grid-template-columns: 1.25fr 1fr 1fr; } }
+  .dec-settings select { font-size: 14px; padding-inline: 8px; }
+
+  .warn { color: var(--warn); font-size: 13px; margin: 0; }
+
+  .strip {
+    position: relative;
+    display: flex; flex-wrap: wrap; gap: 4px;
+    padding: 10px; border-radius: 8px;
+    background: var(--bg);
+    max-height: 300px; overflow-y: auto;
+  }
+  .sym {
+    display: grid; justify-items: center; gap: 4px;
+    padding: 6px 5px 5px; border-radius: 6px;
+    border: 0; background: transparent; color: var(--ink);
+    cursor: pointer;
+  }
+  .sym:hover { background: var(--lane); }
+  .sym.on { background: var(--hl); }
+  .sym .ch { font: 600 15px/1 var(--mono); }
+  .sym .cd { font: 10px/1 var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .roll {
+    display: grid;
+    grid-template-columns: repeat(3, 8px);
+    grid-template-rows: repeat(4, 5px);
+    gap: 2px;
+  }
+  .roll i { background: var(--lane); border-radius: 1px; }
+  .p1 { background: var(--p1) !important; }
+  .p2 { background: var(--p2) !important; }
+  .p3 { background: var(--p3) !important; }
+  .p4 { background: var(--p4) !important; }
+
+  .codeline {
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  /* A box with small icon buttons in its top-right corner. */
+  .outbox { position: relative; }
+  .outbox > code, .outbox > .decoded { padding-right: 84px; }
+  .codeline.outbox > code { padding-right: 46px; }
+  .box-tools { position: absolute; top: 7px; right: 7px; display: flex; gap: 6px; }
+  .outbox:has(> .decoded:empty) .box-tools, .outbox:has(> code:empty) .box-tools { display: none; }
+  .icon-btn {
+    display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0;
+    border: 1px solid var(--line); border-radius: 6px;
+    background: var(--surface); color: var(--muted); cursor: pointer;
+  }
+  .icon-btn:hover { color: var(--ink); border-color: var(--muted); }
+  .icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .icon-btn.done { color: var(--p2); border-color: var(--p2); }
+  .icon-btn.done svg { display: none; }
+  .icon-btn.done::after { content: "✓"; font: 700 15px var(--body); }
+  .meta.count { margin: -8px 0 0; }
+  .meta.count:empty { display: none; }
+  .codeline code {
+    flex: 1; min-width: 0;
+    max-height: 5.2em; overflow-y: auto;
+    padding: 6px 10px; border-radius: 6px; background: var(--bg);
+    font: 13px/1.6 var(--mono); word-spacing: 0.2em;
+    overflow-wrap: anywhere; color: var(--ink);
+  }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .actions + .actions { margin-top: -6px; }
+  .meta.caption { margin: -8px 0 0; }
+  .btn {
+    font: 700 14px var(--body);
+    padding: 9px 16px; border-radius: 6px;
+    background: var(--btn); color: var(--btn-ink);
+    border: 1px solid var(--btn); cursor: pointer;
+  }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { border-color: var(--muted); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .status { font-size: 13px; color: var(--muted); margin: 0; min-height: 1.5em; }
+
+  .drop {
+    position: relative;
+    display: grid; gap: 4px; justify-items: center; text-align: center;
+    padding: 20px 12px;
+    border: 1.5px dashed var(--line); border-radius: 8px;
+    background: var(--bg); cursor: pointer;
+  }
+  .drop.over { border-color: var(--focus); background: var(--hl); }
+  .drop strong { font-size: 15px; }
+  .drop span { font-size: 13px; color: var(--muted); }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+  .decoded {
+    position: relative;
+    max-height: 260px; overflow-y: auto;
+    font: 600 22px/1.35 var(--mono);
+    padding: 12px; border-radius: 8px; background: var(--bg);
+    overflow-wrap: anywhere; min-height: 1.35em;
+    white-space: pre-wrap;
+  }
+  .decoded span { border-radius: 3px; }
+  .decoded span.on { background: var(--hl); }
+  .decoded span.bad { color: var(--warn); text-decoration: underline wavy; }
+  .decoded span.ctl::before {
+    content: attr(data-g);
+    font-size: 0.6em; color: var(--muted); vertical-align: super; padding-inline: 1px;
+  }
+  .sym.ctl .ch { color: var(--muted); }
+  .source { font-size: 13px; color: var(--muted); margin: 0; overflow-wrap: anywhere; }
+
+  .book { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+  @media (min-width: 420px) { .book { grid-template-columns: repeat(2, 1fr); } .book .legend { grid-column: span 2; } }
+  @media (min-width: 900px) { .book { grid-template-columns: repeat(4, 1fr); } }
+  .book table { border-collapse: collapse; width: 100%; font-family: var(--mono); }
+  .book caption { text-align: left; padding-bottom: 6px; font-size: 13px; }
+  .book caption b { font-weight: 600; }
+  .book caption span { color: var(--muted); }
+  .book th { font-size: 11px; font-weight: 400; color: var(--muted); padding: 4px; }
+  .book td { padding: 2px; }
+  .book td button {
+    width: 100%; aspect-ratio: 1; max-width: 100%;
+    font: 600 15px var(--mono); color: var(--ink);
+    background: var(--bg); border: 1px solid transparent; border-radius: 5px;
+    cursor: pointer;
+  }
+  .book td button:hover { border-color: var(--muted); }
+  .tier-h { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  .tier-h h3 { font: 600 16px var(--display); margin: 0; }
+  .tier-h span { font-size: 13px; color: var(--muted); max-width: 75ch; }
+  .legend { display: grid; gap: 8px; font-size: 13px; align-content: start; padding-top: 2px; }
+  .legend h4 {
+    margin: 0; font: 700 11px var(--body); text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted);
+  }
+  .legend dl { margin: 0; display: grid; gap: 6px; }
+  .legend dl div { display: grid; grid-template-columns: 84px 1fr; gap: 8px; }
+  .legend dt { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+  .legend dd { margin: 0; color: var(--muted); }
+  .legend dd b { color: var(--ink); }
+  .legend code { font: 600 14px var(--mono); color: var(--ink); }
+  .pairs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .shift-key {
+    display: grid; justify-items: center; gap: 2px;
+    min-width: 46px; padding: 6px 8px 5px;
+    background: var(--bg); color: var(--ink);
+    border: 1px solid transparent; border-radius: 5px; cursor: pointer;
+  }
+  .shift-key:hover { border-color: var(--muted); }
+  .shift-key b { font: 600 16px/1.1 var(--mono); }
+  .shift-key span { font: 11px/1.2 var(--mono); color: var(--muted); }
+  .book td button.key { color: var(--muted); }
+  .book td button.short { position: relative; }
+  .book td button.short::after {
+    content: ""; position: absolute; top: 5px; right: 5px;
+    width: 5px; height: 5px; border-radius: 50%; background: var(--muted);
+  }
+  .toggle { display: flex; gap: 8px; align-items: center; min-height: 38px; font-size: 14px; cursor: pointer; }
+  .settings .toggle input { width: auto; margin: 0; }
+  .decoded span.ctl.end::before { font-size: 0.75em; vertical-align: baseline; margin-inline: 6px; }
+  .book-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; }
+
+  .seg { display: flex; flex-wrap: wrap; gap: 6px; }
+  .seg button {
+    font: 700 13px var(--body); padding: 7px 12px; border-radius: 6px;
+    border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer;
+  }
+  .seg button:hover { border-color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+  .meters {
+    display: flex; gap: 10px; align-items: stretch;
+    height: 96px; padding: 10px 12px; border-radius: 8px; background: var(--bg);
+  }
+  .meter { flex: 0 1 44px; display: grid; grid-template-rows: 1fr auto; gap: 4px; justify-items: center; }
+  .meter span { font: 11px var(--mono); color: var(--muted); }
+  .bar { position: relative; width: 100%; background: var(--lane); border-radius: 4px; overflow: hidden; }
+  .fill { position: absolute; inset: 0; transform-origin: bottom; transform: scaleY(0); }
+  .partial { margin-left: auto; display: grid; align-content: center; justify-items: end; gap: 4px; }
+  .partial code { font: 600 22px var(--mono); letter-spacing: 0.1em; }
+  #decoded:empty::before {
+    content: "Decoded text appears here.";
+    font: 15px var(--body); color: var(--muted);
+  }
+  .quiz { display: grid; gap: 20px; grid-template-columns: 1fr; }
+  @media (min-width: 900px) { .quiz { grid-template-columns: 1.3fr 1fr; align-items: start; } }
+  .quiz-main, .quiz-stats { display: grid; gap: 14px; min-width: 0; align-content: start; }
+  .quiz .settings { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; }
+  .quiz .settings .field { flex: 0 0 auto; }
+  .quiz .seg { flex-wrap: nowrap; }
+  .quiz .settings select { width: auto; min-width: 190px; }
+  .quiz-card { display: grid; gap: 10px; padding: 16px; border-radius: 8px; background: var(--bg); }
+  .quiz-prompt { margin: 0; color: var(--muted); }
+  #qAnswer { font: 600 22px var(--mono); padding: 10px 12px; background: var(--surface); }
+  .quiz-feedback { margin: 0; min-height: 1.5em; font-weight: 700; }
+  .quiz-feedback.ok { color: var(--p2); }
+  .quiz-feedback.no { color: var(--p4); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 260px; overflow-y: auto; }
+  .chip {
+    display: grid; justify-items: center; gap: 1px;
+    min-width: 40px; padding: 4px 6px; border-radius: 6px;
+    border: 1px solid var(--line); background: var(--bg);
+    font: 600 14px var(--mono); color: var(--ink);
+  }
+  .chip small { font: 10px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .fold {
+    all: unset; cursor: pointer; font: inherit;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .fold::before {
+    content: ""; width: 9px; height: 9px; margin-top: -3px;
+    border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+    transform: rotate(45deg); transition: transform 0.15s;
+  }
+  .panel.collapsed .fold::before { transform: rotate(-45deg); margin-top: 0; }
+  .fold:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; border-radius: 4px; }
+  .panel.collapsed > :not(:first-child) { display: none; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Four-Tone Code</h1>
+      <p class="tagline">Text to tones and back.</p>
+    </div>
+    <div class="pitch-box">
+      <div class="pitches" id="pitches" aria-label="The four pitches, click to hear"></div>
+      <span class="pitch-hint">The four pitches · click to hear</span>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="panel" aria-labelledby="enc-h">
+      <h2 id="enc-h">Encode</h2>
+      <div class="field">
+        <label class="label" for="text">Text</label>
+        <textarea id="text" rows="2" spellcheck="false">Four pitches, 64 codes. Listen closely!</textarea>
+        <p class="warn" id="skipped" hidden></p>
+      </div>
+
+      <div class="settings">
+        <div class="field">
+          <label class="label" for="preset">Speed</label>
+          <select id="preset">
+            <option value="beginner">Beginner</option>
+            <option value="practiced" selected>Practiced</option>
+            <option value="x2">Fast (2×)</option>
+            <option value="x4">Very fast (4×)</option>
+            <option value="x8">Expert (8×)</option>
+            <option value="x16">Limit of hearing (16×)</option>
+            <option value="x32">Machine only (32×)</option>
+            <option value="x64">Machine only (64×)</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="tone">Tone, ms</label>
+          <input id="tone" type="number" min="1" max="2000" step="1" value="150">
+        </div>
+        <div class="field">
+          <label class="label" for="gapIn">Gap in a symbol, ms</label>
+          <input id="gapIn" type="number" min="0" max="2000" step="1" value="50">
+        </div>
+        <div class="field">
+          <label class="label" for="gapSym">Gap between symbols, ms</label>
+          <input id="gapSym" type="number" min="0" max="5000" step="1" value="350">
+        </div>
+        <div class="field">
+          <label class="label" for="soundSet">Pitch set</label>
+          <select id="soundSet">
+            <option value="fifths">Fifths</option>
+            <option value="chord">Do–mi–sol–do'</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label" for="program">Instrument</label>
+          <select id="program">
+            <!-- Only instruments that stay clean at 16x, even through MP3. -->
+            <option value="0" selected>Piano</option>
+            <option value="73">Flute</option>
+            <option value="9">Glockenspiel</option>
+            <option value="12">Marimba</option>
+            <option value="16">Organ</option>
+            <option value="79">Pure tone (ocarina)</option>
+          </select>
+        </div>
+        <div class="field">
+          <span class="label">Ending</span>
+          <label class="toggle"><input id="endMark" type="checkbox"> Add ∎ End of message</label>
+        </div>
+        <div class="field">
+          <span class="label">Code length</span>
+          <label class="toggle"><input id="fixed3" type="checkbox" checked> 3 tones only</label>
+        </div>
+      </div>
+
+      <div class="strip" id="strip" aria-label="Encoded symbols, click one to hear it"></div>
+
+      <div class="codeline outbox">
+        <code id="codes"></code>
+        <div class="box-tools">
+          <button class="icon-btn" id="copy" type="button" aria-label="Copy codes" title="Copy codes"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>
+        </div>
+      </div>
+      <p class="meta caption" id="meta"></p>
+
+      <div class="actions">
+        <button class="btn" id="play" type="button">Play</button>
+        <button class="btn ghost" id="stop" type="button">Stop</button>
+      </div>
+      <div class="actions">
+        <button class="btn ghost" id="download" type="button">Download .mid</button>
+        <button class="btn ghost" id="downloadZip" type="button">Download .zip</button>
+        <button class="btn ghost" id="downloadMp3" type="button">Download .mp3</button>
+      </div>
+      <p class="status" id="encStatus"></p>
+    </section>
+
+    <section class="panel decode" aria-labelledby="dec-h">
+      <h2 id="dec-h">Decode</h2>
+      <div class="field">
+        <span class="label" id="srcLabel">Source</span>
+        <div class="seg" id="modes" role="group" aria-labelledby="srcLabel">
+          <button type="button" data-mode="file" aria-pressed="true">File</button>
+          <button type="button" data-mode="mic" aria-pressed="false">Microphone</button>
+          <button type="button" data-mode="page" aria-pressed="false">This page</button>
+        </div>
+      </div>
+      <p class="source" id="modeHelp"></p>
+      <label class="drop" id="drop" for="file">
+        <strong>Choose a file</strong>
+        <span>or drop a .mid, .zip or recording (.mp3, .wav, .m4a) here</span>
+        <input id="file" type="file" accept=".mid,.midi,.zip,.mp3,.wav,.m4a,.aac,.ogg,.opus,.webm,.flac,audio/*,application/zip">
+      </label>
+      <p class="source" id="source"></p>
+      <div class="settings dec-settings">
+        <div class="field">
+          <label class="label" for="lSet">Pitch set</label>
+          <select id="lSet"><option value="encode">As Encode</option></select>
+        </div>
+        <div class="field">
+          <label class="label" for="lSpeed">Speed</label>
+          <select id="lSpeed"><option value="encode">As Encode</option></select>
+        </div>
+        <div class="field">
+          <label class="label" for="lLen">Code length</label>
+          <select id="lLen">
+            <option value="encode">As Encode</option>
+            <option value="mixed">1 to 3 tones</option>
+            <option value="fixed">3 tones only</option>
+          </select>
+        </div>
+      </div>
+      <p class="source" id="lInfo"></p>
+      <div class="actions">
+        <button class="btn" id="lStart" type="button">Play and decode</button>
+        <button class="btn ghost" id="lNow" type="button" hidden>Decode now</button>
+        <button class="btn ghost" id="lStop" type="button">Stop</button>
+      </div>
+      <p class="status" id="lStatus"></p>
+      <div class="meters" id="meters" aria-hidden="true" hidden>
+        <div class="meter"><div class="bar"><i class="fill p1"></i></div><span>1</span></div>
+        <div class="meter"><div class="bar"><i class="fill p2"></i></div><span>2</span></div>
+        <div class="meter"><div class="bar"><i class="fill p3"></i></div><span>3</span></div>
+        <div class="meter"><div class="bar"><i class="fill p4"></i></div><span>4</span></div>
+        <div class="partial"><span class="label">Hearing</span><code id="lPartial">· · ·</code></div>
+      </div>
+      <div class="outbox grow">
+        <div class="decoded" id="decoded" aria-live="polite"></div>
+        <div class="box-tools">
+          <button class="icon-btn" id="lCopy" type="button" aria-label="Copy text" title="Copy text"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg></button>
+          <button class="icon-btn" id="lClear" type="button" aria-label="Clear" title="Clear"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+      </div>
+      <p class="meta count" id="lCount"></p>
+      <div class="codeline" id="decCodeLine" hidden><code id="decCodes"></code></div>
+      <p class="warn" id="decWarn" hidden></p>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="book-h">
+    <div class="book-head">
+      <h2 id="book-h">Codebook</h2>
+      <span class="meta">Click a cell to hear it.</span>
+    </div>
+    <p class="lede">Each character is three tones: the 1st picks the table, the 2nd the row, the 3rd the column. For example, H = 1 2 4.</p>
+    <div class="tier-h">
+      <h3>3 tones</h3>
+      <span>Every character and key. A dot means it also has a short code.</span>
+    </div>
+    <div class="book" id="book"></div>
+    <div class="tier-h">
+      <h3>Short codes</h3>
+      <span>With "3 tones only" off.</span>
+    </div>
+    <div class="book" id="bookShort"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="quiz-h">
+    <div class="book-head">
+      <h2 id="quiz-h">Practice</h2>
+      <span class="meta">Listen, then type what you heard. Uses the Encode settings.</span>
+    </div>
+    <div class="quiz">
+      <div class="quiz-main">
+        <div class="settings">
+          <div class="field">
+            <span class="label" id="qModeLabel">Practice</span>
+            <div class="seg" id="qModes" role="group" aria-labelledby="qModeLabel">
+              <button type="button" data-q="pitch" aria-pressed="false">Pitches</button>
+              <button type="button" data-q="char" aria-pressed="true">Characters</button>
+              <button type="button" data-q="word" aria-pressed="false">Words</button>
+            </div>
+          </div>
+          <div class="field" id="qPoolField">
+            <label class="label" for="qPool">Characters from</label>
+            <select id="qPool">
+              <option value="letters">Letters</option>
+              <option value="alnum">Letters and digits</option>
+              <option value="all">Everything</option>
+            </select>
+          </div>
+        </div>
+        <div class="quiz-card">
+          <p class="quiz-prompt" id="qPrompt">Press Next to hear the first one.</p>
+          <input id="qAnswer" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type what you heard" aria-label="Your answer">
+          <p class="quiz-feedback" id="qFeedback" aria-live="polite"></p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="qNext" type="button">Next</button>
+          <button class="btn ghost" id="qReplay" type="button">Replay</button>
+          <button class="btn ghost" id="qReveal" type="button">Show answer</button>
+          <span class="meta" id="qScore"></span>
+        </div>
+      </div>
+      <div class="quiz-stats">
+        <div class="book-head">
+          <span class="label" id="qChipsLabel">Accuracy by character</span>
+          <button class="btn ghost small" id="qReset" type="button">Reset</button>
+        </div>
+        <div class="chips" id="qChips"></div>
+        <p class="source">Weaker characters come up more often. Progress is kept in this browser.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const hz = p => 440 * Math.pow(2, (p - 69) / 12);
+  // Three tiers: the fewer tones, the more common the character.
+  // 1 tone: space and E T A. 2 tones: the next twelve letters in "etaoin shrdlu" order,
+  // then the four keys. 3 tones: every character and key in a fixed keyboard order, so
+  // anything can be looked up, and "3 tones only" mode uses nothing else. Characters
+  // with a shorter code keep their long one too.
+  const ONE = " ETA";
+  const TWO = "OINSHRDLCUMW";
+  const KEYS = [
+    { key: "shift", g: "⇧", name: "Shift", desc: "next letter capital, or a key's upper symbol (⇧ 7 = &)" },
+    { key: "caps", g: "⇪", name: "Caps Lock", desc: "all letters capital until pressed again" },
+    { key: "enter", g: "↵", name: "Enter", desc: "new line" },
+    { key: "end", g: "∎", name: "End of message", desc: "also turns Caps Lock off" },
+  ];
+  // 2xx: rest of the alphabet, then space and sentence punctuation. 3xx: digits, then a
+  // calculator. 4xx: brackets (opening first), the other punctuation keys, @ # $ in
+  // keyboard order and the backslash key, then the four keys at 441-444.
+  const LAYERS = ["ABCDEFGHIJKLMNOP", "QRSTUVWXYZ .,?!'", "0123456789+-*/=%", "()[]\":;`@#$\\"];
+  const LAYER_NAMES = ["A–P", "Q–Z, space, punctuation", "digits, math", "brackets, symbols, keys"];
+  const DEC = {}, LONG = {}, SHORT = {}, CTRL = {}, CODE_OF = {}, LONG_CODE_OF = {};
+  LAYERS.forEach((s, l) => [...s].forEach((ch, i) => {
+    const code = `${l + 1}${(i >> 2) + 1}${(i & 3) + 1}`;
+    LONG[ch] = code; DEC[code] = ch;
+  }));
+  [...ONE].forEach((ch, i) => { SHORT[ch] = `${i + 1}`; DEC[`${i + 1}`] = ch; });
+  [...TWO].forEach((ch, i) => { const code = `${(i >> 2) + 1}${(i & 3) + 1}`; SHORT[ch] = code; DEC[code] = ch; });
+  KEYS.forEach((k, i) => {
+    CTRL[`4${i + 1}`] = CTRL[`44${i + 1}`] = k;
+    CODE_OF[k.key] = `4${i + 1}`;
+    LONG_CODE_OF[k.key] = `44${i + 1}`;
+  });
+  // What the encoder sends: the shortest code for each character.
+  const ENC = { ...LONG, ...SHORT };
+  // Shift on a US keyboard. Symbols without a code of their own (~ ^ & _ { } | < >)
+  // are sent as Shift + their key.
+  const SHIFTED = { "`": "~", "1": "!", "2": "@", "3": "#", "4": "$", "5": "%", "6": "^", "7": "&", "8": "*", "9": "(", "0": ")",
+    "-": "_", "=": "+", "[": "{", "]": "}", "\\": "|", ";": ":", "'": "\"", ",": "<", ".": ">", "/": "?" };
+  const SHIFT_BASE = Object.fromEntries(Object.entries(SHIFTED).filter(([, up]) => !ENC[up]).map(([b, a]) => [a, b]));
+  const isLetter = ch => /^[A-Za-z]$/.test(ch);
+
+  // Turns a stream of codes back into characters, like typing on a keyboard.
+  // Letters are lowercase unless exactly one of Caps Lock and Shift is on; Shift on a
+  // symbol key gives its upper symbol. Shift lasts for the next key only. In "3 tones
+  // only" mode anything that isn't 3 tones is a mistake, not a short code.
+  class Typist {
+    constructor({ fixed = false } = {}) { this.caps = false; this.shift = false; this.fixed = fixed; }
+    push(code) {
+      if (this.fixed && code.length !== 3) { this.shift = false; return { ch: "¿", code, ok: false }; }
+      const ctl = CTRL[code];
+      if (ctl) {
+        if (ctl.key === "caps") this.caps = !this.caps;
+        else if (ctl.key === "shift") this.shift = true;
+        else if (ctl.key === "end") this.caps = this.shift = false;
+        return { ch: ctl.key === "enter" ? "\n" : "", code, ok: true, ctl };
+      }
+      let ch = DEC[code];
+      const shift = this.shift;
+      this.shift = false;
+      if (ch === undefined) return { ch: "¿", code, ok: false };
+      if (isLetter(ch)) ch = this.caps !== shift ? ch : ch.toLowerCase();
+      else if (shift && SHIFTED[ch]) ch = SHIFTED[ch];
+      return { ch, code, ok: true };
+    }
+  }
+  // Each faster step halves Practiced. 16x (9 ms) is the limit of hearing: a tone still
+  // holds two cycles of the lowest pitch (A3, 4.5 ms per cycle). 32x (5 ms) sounds like
+  // clicks, and 64x (2 ms) is shorter than one cycle, but the MIDI file keeps exact
+  // 1 ms timing, so both still decode from MIDI.
+  const PRESETS = { beginner: [250, 80, 600], practiced: [150, 50, 350] };
+  [2, 4, 8, 16, 32, 64].forEach(k => (PRESETS["x" + k] = PRESETS.practiced.map(ms => Math.max(1, Math.round(ms / k)))));
+  const $ = id => document.getElementById(id);
+  const show = ch => ch === " " ? "␣" : ch;
+
+  // ---------- sound sets ----------
+  // Two sets of four pitches: a stack of fifths, or the do–mi–sol–do' of a major chord.
+  const SOUND_SETS = {
+    fifths: { name: "Fifths", notes: [57, 64, 71, 78], labels: ["A3", "E4", "B4", "F♯5"] },
+    chord: { name: "Do–mi–sol–do'", notes: [60, 64, 67, 72], labels: ["do C4", "mi E4", "sol G4", "do' C5"] },
+  };
+  const soundSet = key => SOUND_SETS[key] || SOUND_SETS.fifths;
+
+  // Goertzel magnitudes over the last `n` samples of a ring buffer.
+  function goertzel(buf, n, w, N, coefs) {
+    const start = n < N ? 0 : w;
+    return coefs.map(c => {
+      let s1 = 0, s2 = 0;
+      for (let j = 0, p = start; j < n; j++) {
+        const s = buf[p] + c * s1 - s2; s2 = s1; s1 = s;
+        if (++p === N) p = 0;
+      }
+      return n ? 2 * Math.sqrt(Math.max(0, s1 * s1 + s2 * s2 - c * s1 * s2)) / n : 0;
+    });
+  }
+  const argmax = v => v.reduce((b, x, i) => (x > v[b] ? i : b), 0);
+
+  // Measures the four pitches in each hop of audio, and picks the pitch of a tone
+  // from its summed measurements.
+  function makeDetector(setKey, sr) {
+    const set = soundSet(setKey);
+    const coefs = set.notes.map(p => 2 * Math.cos(2 * Math.PI * hz(p) / sr));
+    // In an octave set a low note's first overtone lands on the high note, and small
+    // speakers can make that overtone the loudest part. A real high note has nothing
+    // an octave below it.
+    const octave = set.notes[3] - set.notes[0] === 12;
+    return {
+      hop: (buf, n, w, N) => goertzel(buf, n, w, N, coefs),
+      decide: s => { const b = argmax(s); return octave && b === 3 && s[0] > 0.35 * s[3] ? 0 : b; },
+      meter: (v, pk) => v.map(x => Math.min(1, x / Math.max(pk * 1.5, 0.02))),
+    };
+  }
+
+  // ---------- encoding ----------
+  // Letters start lowercase. For a letter in the other case, Caps Lock is used when the
+  // next letter wants the same case too, otherwise Shift (two tones either way).
+  // `fixed`: "3 tones only", so every character and key uses its 3-tone code.
+  function encodeText(text, { end = false, fixed = false } = {}) {
+    const symbols = [], skipped = new Set(), enc = fixed ? LONG : ENC, keys = fixed ? LONG_CODE_OF : CODE_OF;
+    const chars = [...text.replace(/\r\n?/g, "\n").replace(/\t/g, " ")];
+    const press = key => { const code = keys[key]; symbols.push({ ch: CTRL[code].g, code, ctl: CTRL[code] }); };
+    const isUpper = ch => ch !== ch.toLowerCase();
+    let caps = false;
+    chars.forEach((raw, i) => {
+      if (raw === "\n") return press("enter");
+      if (isLetter(raw)) {
+        if (isUpper(raw) !== caps) {
+          let next = null;
+          for (let j = i + 1; j < chars.length; j++) if (isLetter(chars[j])) { next = chars[j]; break; }
+          if (next !== null && isUpper(next) === isUpper(raw)) { press("caps"); caps = !caps; }
+          else press("shift");
+        }
+        symbols.push({ ch: raw, code: enc[raw.toUpperCase()] });
+      } else if (enc[raw]) symbols.push({ ch: raw, code: enc[raw] });
+      else if (SHIFT_BASE[raw]) {
+        press("shift");
+        symbols.push({ ch: raw, code: enc[SHIFT_BASE[raw]] });
+      } else skipped.add(raw);
+    });
+    if (end && symbols.length) press("end");
+    return { symbols, skipped };
+  }
+
+  const vlq = n => { const b = [n & 0x7f]; while ((n >>= 7)) b.unshift((n & 0x7f) | 0x80); return b; };
+  const u32 = n => [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255];
+
+  // Division 500 ticks per quarter at 500000 µs per quarter, so 1 tick = 1 ms.
+  function buildMidi(symbols, [tone, gapIn, gapSym], program, setKey = "fifths", fixed = false) {
+    const set = soundSet(setKey);
+    const t = [];
+    const name = [...new TextEncoder().encode("Four-Tone Code")];
+    t.push(0, 0xff, 0x03, ...vlq(name.length), ...name);
+    t.push(0, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20);
+    const info = [...new TextEncoder().encode(`four-tone-code set=${setKey}${fixed ? " len=3" : ""} tone=${tone} in=${gapIn} gap=${gapSym}`)];
+    t.push(0, 0xff, 0x01, ...vlq(info.length), ...info);
+    t.push(0, 0xc0, program);
+    let wait = 0;
+    for (const s of symbols) {
+      [...s.code].forEach((d, k) => {
+        const n = set.notes[d - 1];
+        t.push(...vlq(wait), 0x90, n, 100);
+        t.push(...vlq(tone), 0x80, n, 0);
+        wait = k < s.code.length - 1 ? gapIn : gapSym;
+      });
+    }
+    t.push(0, 0xff, 0x2f, 0x00);
+    const head = [0x4d, 0x54, 0x68, 0x64, 0, 0, 0, 6, 0, 0, 0, 1, 500 >> 8, 500 & 255];
+    return new Uint8Array([...head, 0x4d, 0x54, 0x72, 0x6b, ...u32(t.length), ...t]);
+  }
+
+  // ---------- MIDI parsing ----------
+  function parseMidi(u) {
+    const str = (p, n) => String.fromCharCode(...u.slice(p, p + n));
+    const r32 = p => ((u[p] << 24) | (u[p + 1] << 16) | (u[p + 2] << 8) | u[p + 3]) >>> 0;
+    const r16 = p => (u[p] << 8) | u[p + 1];
+    if (u.length < 14 || str(0, 4) !== "MThd") throw new Error("This isn't a MIDI file. A MIDI file starts with the bytes “MThd”.");
+    const hlen = r32(4), div = r16(12);
+    const smpte = div & 0x8000 ? 1 / ((256 - (div >> 8)) * (div & 0xff)) : 0;
+    const tempos = [], notes = [];
+    let program = null, timingInfo = null, setInfo = null, fixedInfo = false;
+    const progs = {};
+    let p = 8 + hlen;
+    while (p + 8 <= u.length) {
+      const type = str(p, 4), len = r32(p + 4), end = Math.min(p + 8 + len, u.length);
+      if (type === "MTrk") {
+        let q = p + 8, tick = 0, running = 0;
+        const open = {};
+        const rv = () => { let v = 0, b; do { b = u[q++]; v = (v << 7) | (b & 0x7f); } while (b & 0x80 && q < end); return v; };
+        while (q < end) {
+          tick += rv();
+          let st = u[q];
+          if (st & 0x80) { q++; if (st < 0xf0) running = st; }
+          else if (running) st = running;
+          else throw new Error("The MIDI file is damaged (running status with no previous event).");
+          if (st === 0xff) {
+            const mt = u[q++], ml = rv();
+            if (mt === 0x51 && ml === 3) tempos.push({ tick, us: (u[q] << 16) | (u[q + 1] << 8) | u[q + 2] });
+            if (mt === 0x01) {
+              const m = new TextDecoder().decode(u.slice(q, q + ml)).match(/four-tone-code(?: set=(\w+))?(?: len=(\d))? tone=(\d+) in=(\d+) gap=(\d+)/);
+              if (m) { setInfo = m[1] || "fifths"; fixedInfo = m[2] === "3"; timingInfo = m.slice(3).map(Number); }
+            }
+            q += ml;
+            if (mt === 0x2f) break;
+          } else if (st === 0xf0 || st === 0xf7) {
+            q += rv();
+          } else {
+            const hi = st & 0xf0, ch = st & 0x0f;
+            const a = u[q++], b = hi === 0xc0 || hi === 0xd0 ? 0 : u[q++];
+            if (ch === 9) continue; // skip the drum channel
+            if (hi === 0xc0) { progs[ch] = a; if (program === null) program = a; continue; }
+            const key = ch * 128 + a;
+            if (hi === 0x90 && b > 0) (open[key] ||= []).push(tick);
+            else if (hi === 0x80 || (hi === 0x90 && b === 0)) {
+              const s = open[key]?.shift();
+              if (s !== undefined) notes.push({ pitch: a, s, e: tick, ch, program: progs[ch] });
+            }
+          }
+        }
+        for (const key in open) for (const s of open[key]) notes.push({ pitch: key % 128, s, e: s + (div & 0x7fff) / 2, ch: Math.floor(key / 128), program: progs[Math.floor(key / 128)] });
+      }
+      p = p + 8 + len;
+    }
+    tempos.sort((a, b) => a.tick - b.tick);
+    const toSec = tick => {
+      if (smpte) return tick * smpte;
+      let sec = 0, last = 0, us = 500000;
+      for (const t of tempos) {
+        if (t.tick >= tick) break;
+        sec += (t.tick - last) * us / 1e6 / div; last = t.tick; us = t.us;
+      }
+      return sec + (tick - last) * us / 1e6 / div;
+    };
+    const out = notes
+      .map(n => ({ pitch: n.pitch, ch: n.ch, program: n.program, start: toSec(n.s), dur: Math.max(0.004, toSec(n.e) - toSec(n.s)) }))
+      .sort((a, b) => a.start - b.start || a.pitch - b.pitch);
+    out.program = program ?? 0; // General MIDI defaults to piano
+    out.timing = timingInfo;
+    out.setKey = setInfo;
+    out.fixed = fixedInfo;
+    return out;
+  }
+
+  // ---------- decoding ----------
+  function decodeNotes(notes) {
+    const warn = [];
+    if (!notes.length) return { chars: [], noteToChar: [], warn: ["The file has no notes."] };
+    const uniq = [...new Set(notes.map(n => n.pitch))].sort((a, b) => a - b);
+    // Files from this page name their pitch set; otherwise find the set that fits.
+    const setKey = SOUND_SETS[notes.setKey] ? notes.setKey
+      : Object.keys(SOUND_SETS).find(k => uniq.every(p => SOUND_SETS[k].notes.includes(p))) || null;
+    const set = SOUND_SETS[setKey];
+    const nearest = (list, p) => list.reduce((best, x, i) => Math.abs(x - p) < Math.abs(list[best] - p) ? i : best, 0) + 1;
+    let digit;
+    if (set) digit = n => nearest(set.notes, n.pitch);
+    else if (uniq.length === 4) {
+      digit = n => uniq.indexOf(n.pitch) + 1;
+      warn.push("The file doesn't use one of the page's pitch sets, so its four pitches were ranked from low to high.");
+    } else {
+      digit = n => nearest(SOUND_SETS.fifths.notes, n.pitch);
+      warn.push("Some pitches aren't one of the four; each was matched to the nearest one.");
+    }
+    notes.forEach(n => (n.digit = digit(n)));
+    notes.setKey = setKey;
+
+    // Split into symbols at the long gaps: find the biggest jump in the sorted onset spacing.
+    const diffs = notes.slice(1).map((n, i) => n.start - notes[i].start);
+    const sorted = [...diffs].sort((a, b) => a - b);
+    let ratio = 1, at = -1;
+    for (let i = 0; i + 1 < sorted.length; i++) {
+      const r = sorted[i + 1] / Math.max(sorted[i], 1e-3);
+      if (r > ratio) { ratio = r; at = i; }
+    }
+    // Files from this page say their timing; otherwise use the biggest jump in spacing.
+    const thr = notes.timing ? (2 * notes.timing[0] + notes.timing[1] + notes.timing[2]) / 2000
+      : ratio >= 1.4 ? Math.sqrt(Math.max(sorted[at], 1e-3) * sorted[at + 1]) : Infinity;
+    const raw = [];
+    let cur = [0];
+    diffs.forEach((d, i) => { if (d > thr) { raw.push(cur); cur = []; } cur.push(i + 1); });
+    raw.push(cur);
+    const groups = [];
+    for (const g of raw) {
+      // "3 tones only" files are read 3 tones at a time; so is anything with no visible gaps.
+      if (notes.fixed || (thr === Infinity && g.length % 3 === 0)) for (let i = 0; i < g.length; i += 3) groups.push(g.slice(i, i + 3));
+      else groups.push(g);
+    }
+
+    const typist = new Typist({ fixed: notes.fixed }), chars = [], noteToChar = [];
+    let bad = 0;
+    groups.forEach((g, gi) => {
+      g.forEach(ni => (noteToChar[ni] = gi));
+      const r = typist.push(g.map(ni => notes[ni].digit).join(""));
+      if (!r.ok) bad++;
+      chars.push(r);
+    });
+    if (bad) warn.push(`${bad} symbol${bad > 1 ? "s" : ""} couldn't be read (marked ¿). A symbol is 1, 2 or 3 tones.`);
+    return { chars, noteToChar, warn, setKey };
+  }
+
+  // ---------- ZIP: a much smaller download, and the only one the published page allows ----------
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  const crc32 = u => { let c = 0xffffffff; for (const b of u) c = CRC[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+  const le16 = n => [n & 255, (n >> 8) & 255];
+  const le32 = n => [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+  // MIDI from this page repeats the same few events, so it compresses very well.
+  async function deflateRaw(data) {
+    if (typeof CompressionStream === "undefined") return null;
+    try {
+      const stream = new Blob([data]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+      return new Uint8Array(await new Response(stream).arrayBuffer());
+    } catch (_) { return null; }
+  }
+  // One-file zip. Compressed (method 8) when the browser can; stored (method 0) otherwise.
+  async function makeZip(name, data) {
+    const packed = await deflateRaw(data);
+    const method = packed && packed.length < data.length ? 8 : 0, body = method ? packed : data;
+    const nm = new TextEncoder().encode(name), crc = crc32(data), d = new Date();
+    const time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    const date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    const common = [...le16(20), ...le16(0), ...le16(method), ...le16(time), ...le16(date), ...le32(crc), ...le32(body.length), ...le32(data.length), ...le16(nm.length), ...le16(0)];
+    const local = [...le32(0x04034b50), ...common, ...nm];
+    const central = [...le32(0x02014b50), ...le16(20), ...common, ...le16(0), ...le16(0), ...le16(0), ...le32(0), ...le32(0), ...nm];
+    const cdOffset = local.length + body.length;
+    const eocd = [...le32(0x06054b50), 0, 0, 0, 0, ...le16(1), ...le16(1), ...le32(central.length), ...le32(cdOffset), 0, 0];
+    const out = new Uint8Array(cdOffset + central.length + eocd.length);
+    out.set(local, 0); out.set(body, local.length); out.set(central, cdOffset); out.set(eocd, cdOffset + central.length);
+    return out;
+  }
+  async function fileFromZip(u) {
+    const r16 = p => u[p] | (u[p + 1] << 8), r32 = p => (u[p] | (u[p + 1] << 8) | (u[p + 2] << 16) | (u[p + 3] << 24)) >>> 0;
+    let e = u.length - 22;
+    while (e >= 0 && r32(e) !== 0x06054b50) e--;
+    if (e < 0) throw new Error("This .zip file is damaged.");
+    let p = r32(e + 16);
+    for (let i = 0, n = r16(e + 10); i < n; i++) {
+      const method = r16(p + 10), csize = r32(p + 20), nlen = r16(p + 28), xlen = r16(p + 30), clen = r16(p + 32), off = r32(p + 42);
+      const name = new TextDecoder().decode(u.slice(p + 46, p + 46 + nlen));
+      p += 46 + nlen + xlen + clen;
+      if (!/\.(midi?|mp3|wav|m4a|aac|ogg|oga|opus|webm|flac)$/i.test(name) || name.startsWith("__MACOSX")) continue;
+      const start = off + 30 + r16(off + 26) + r16(off + 28);
+      const raw = u.slice(start, start + csize);
+      if (method === 0) return { name, bytes: raw };
+      if (method === 8 && "DecompressionStream" in window) {
+        const buf = await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer();
+        return { name, bytes: new Uint8Array(buf) };
+      }
+      throw new Error("This browser can't unpack that .zip. Unzip it and upload the file inside.");
+    }
+    throw new Error("There's no MIDI file or recording inside this .zip.");
+  }
+
+  // ---------- audio ----------
+  let ctx, master, voices = [], raf = 0, onTick = null, pumpTimer = 0;
+  function audio() {
+    if (!ctx) {
+      ctx = new (window.AudioContext || window.webkitAudioContext)();
+      master = ctx.createGain(); master.gain.value = 0.3; master.connect(ctx.destination);
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+  // Synth voices. Each one is an envelope plus an oscillator source, with optional
+  // extra partials, a filter (with its own envelope) and vibrato. Attack and release
+  // shrink with the tone length so the fastest speeds still sound like separate notes.
+  const saw = n => Array.from({ length: n + 1 }, (_, k) => (k ? 1 / k : 0));
+  const VOICES = {
+    piano:       { name: "piano",        wave: [0, 1, .55, .28, .18, .09, .05, .03], env: { a: .004, sus: .25, tc: .35, rel: .04 } },
+    harpsichord: { name: "harpsichord",  wave: [0, 1, .8, .7, .6, .5, .45, .4, .3, .25, .2, .15], gain: .6,
+                   filter: { f: 6000, to: 1600, tc: .15 }, env: { a: .002, sus: 0, tc: .4, rel: .03 } },
+    bell:        { name: "glockenspiel", type: "sine", partials: [{ r: 2.76, g: .4, tc: .08 }, { r: 5.4, g: .2, tc: .04 }],
+                   env: { a: .002, sus: 0, tc: .35, rel: .05 } },
+    marimba:     { name: "marimba",      type: "sine", gain: 1.2, partials: [{ r: 4, g: .35, tc: .025 }],
+                   env: { a: .003, sus: 0, tc: .16, rel: .025 } },
+    organ:       { name: "organ",        wave: [0, 1, .8, .5, .4, 0, .3, 0, .25], gain: .8, env: { a: .006, sus: 1, rel: .02 } },
+    guitar:      { name: "nylon guitar", wave: saw(16), gain: .9,
+                   filter: { f: 5000, to: 700, tc: .2 }, env: { a: .002, sus: 0, tc: .5, rel: .05 } },
+    violin:      { name: "violin",       type: "sawtooth", gain: .45, filter: { f: 3000, Q: .7 },
+                   vibrato: { rate: 6, depth: .006, delay: .08 }, env: { a: .05, sus: 1, rel: .06 } },
+    trumpet:     { name: "trumpet",      type: "sawtooth", gain: .5,
+                   filter: { f: 700, to: 2800, tc: .03 }, env: { a: .025, sus: .85, tc: .1, rel: .04 } },
+    clarinet:    { name: "clarinet",     wave: [0, 1, 0, .75, 0, .5, 0, .14, 0, .1], gain: .7, env: { a: .03, sus: 1, rel: .04 } },
+    flute:       { name: "flute",        type: "sine", gain: .9, partials: [{ r: 2, g: .12 }],
+                   vibrato: { rate: 5.5, depth: .004 }, env: { a: .04, sus: 1, rel: .03 } },
+    sine:        { name: "pure tone",    type: "sine", env: { a: .01, sus: 1, rel: .02 } },
+    square:      { name: "square lead",  type: "square", gain: .32, filter: { f: 2400, Q: 1 }, env: { a: .005, sus: 1, rel: .015 } },
+    saw:         { name: "sawtooth lead", type: "sawtooth", gain: .3, filter: { f: 3200, Q: 1 }, env: { a: .005, sus: 1, rel: .015 } },
+  };
+  // General MIDI program number -> the page's closest voice (used for uploaded files).
+  function timbre(p) {
+    if (p <= 5 || p >= 120) return "piano";
+    if (p <= 7) return "harpsichord";
+    if ([8, 9, 10, 14, 108, 112, 113].includes(p)) return "bell";
+    if (p <= 15 || (p >= 114 && p <= 119)) return "marimba";
+    if (p <= 23) return "organ";
+    if (p <= 39 || (p >= 104 && p <= 107)) return "guitar";
+    if (p <= 55 || p === 110) return "violin";
+    if (p <= 63) return "trumpet";
+    if (p <= 71 || p === 109 || p === 111) return "clarinet";
+    if (p <= 78) return "flute";
+    if (p === 79) return "sine";
+    if (p === 80) return "square";
+    if (p <= 87) return "saw";
+    return "organ"; // pads and effects
+  }
+  const wavesByContext = new WeakMap();
+  // `gap` is the silence before the next note: the fade-out has to finish inside it,
+  // or a listener (and the live decoder) hears two tones as one.
+  function voice(freq, t0, dur, kind, gap = 1, c = ctx, out = master, track = voices) {
+    let waves = wavesByContext.get(c);
+    if (!waves) wavesByContext.set(c, (waves = {}));
+    const v = VOICES[kind] || VOICES.piano, e = v.env;
+    const off = t0 + dur, a = Math.min(e.a, dur / 3), rel = Math.max(0.0005, Math.min(e.rel, dur / 4, gap / 6));
+    const end = off + rel * 6 + 0.01;
+    const g = c.createGain(), env = g.gain, peak = v.gain ?? 1;
+    env.setValueAtTime(0, t0);
+    env.linearRampToValueAtTime(peak, t0 + a);
+    if (e.sus < 1) env.setTargetAtTime(peak * e.sus, t0 + a, e.tc);
+    env.setTargetAtTime(0, off, rel);
+
+    let dest = g;
+    if (v.filter) {
+      const f = c.createBiquadFilter();
+      f.type = "lowpass"; f.Q.value = v.filter.Q ?? 0.7;
+      f.frequency.setValueAtTime(v.filter.f, t0);
+      if (v.filter.to) f.frequency.setTargetAtTime(v.filter.to, t0, v.filter.tc);
+      f.connect(g); dest = f;
+    }
+    const make = (ratio, gain, tc) => {
+      const o = c.createOscillator();
+      if (v.wave) {
+        waves[kind] ||= c.createPeriodicWave(new Float32Array(v.wave.length), new Float32Array(v.wave));
+        o.setPeriodicWave(waves[kind]);
+      } else o.type = v.type;
+      o.frequency.value = freq * ratio;
+      if (gain === 1 && tc === undefined) o.connect(dest);
+      else {
+        const pg = c.createGain();
+        pg.gain.setValueAtTime(gain, t0);
+        if (tc !== undefined) pg.gain.setTargetAtTime(0, t0, tc);
+        o.connect(pg).connect(dest);
+      }
+      if (v.vibrato) {
+        const lfo = c.createOscillator(), depth = c.createGain();
+        lfo.frequency.value = v.vibrato.rate;
+        depth.gain.setValueAtTime(0, t0);
+        depth.gain.linearRampToValueAtTime(freq * ratio * v.vibrato.depth, t0 + Math.min(v.vibrato.delay ?? 0.01, dur));
+        lfo.connect(depth).connect(o.frequency);
+        lfo.start(t0); lfo.stop(end); track.push(lfo);
+      }
+      o.start(t0); o.stop(end); track.push(o);
+    };
+    make(1, 1);
+    (v.partials || []).forEach(p => make(p.r, p.g, p.tc));
+    g.connect(out);
+  }
+  function stopAll() {
+    clearTimeout(pumpTimer);
+    voices.forEach(o => { try { o.stop(); } catch (_) {} });
+    voices = [];
+    cancelAnimationFrame(raf);
+    if (onTick) onTick(-1);
+    onTick = null;
+  }
+  function playNotes(notes, tick, program = +$("program").value) {
+    stopAll();
+    if (!notes.length) return;
+    // Notes are created a couple of seconds ahead of time, not all at once: building
+    // thousands of sound nodes in one go freezes the page, and the live decoder
+    // (which runs on the page) would miss the sound played meanwhile.
+    const c = audio(), t0 = c.currentTime + 0.15, base = notes[0].start;
+    let next = 0;
+    const pump = () => {
+      const horizon = c.currentTime + 2;
+      for (; next < notes.length && t0 + notes[next].start - base < horizon; next++) {
+        const n = notes[next];
+        const gap = next + 1 < notes.length ? notes[next + 1].start - (n.start + n.dur) : 1;
+        voice(hz(n.pitch), t0 + n.start - base, n.dur, timbre(n.program ?? program), gap);
+      }
+      if (next < notes.length) pumpTimer = setTimeout(pump, 250);
+    };
+    pump();
+    const endAt = Math.max(...notes.map(n => n.start - base + n.dur));
+    onTick = tick;
+    let last = -2, idx = -1;
+    const loop = () => {
+      const t = c.currentTime - t0;
+      if (t > endAt + 0.05) { stopAll(); return; }
+      while (idx + 1 < notes.length && notes[idx + 1].start - base <= t) idx++;
+      if (idx !== last && onTick) { onTick(idx); last = idx; }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+  }
+  const currentSet = () => $("soundSet").value;
+  const isFixed = () => $("fixed3").checked;
+  function codeNotes(code, [tone, gapIn], setKey = currentSet()) {
+    const set = soundSet(setKey);
+    const ns = [...code].map((d, k) => ({
+      digit: +d, pitch: set.notes[d - 1],
+      start: k * (tone + gapIn) / 1000, dur: tone / 1000,
+    }));
+    ns.setKey = setKey;
+    return ns;
+  }
+  // Notes for a piece of text in the current sound set, ready to play.
+  function notesFor(text) {
+    const ns = parseMidi(buildMidi(encodeText(text, { fixed: isFixed() }).symbols, timing(), +$("program").value, currentSet(), isFixed()));
+    decodeNotes(ns);
+    return ns;
+  }
+
+  // ---------- encode UI ----------
+  let state = { symbols: [], midi: new Uint8Array(), notes: [] };
+  const timing = () => ["tone", "gapIn", "gapSym"].map(id => Math.max(id === "tone" ? 1 : 0, Math.round(+$(id).value || 0)));
+
+  function rollEl(code) {
+    const roll = document.createElement("span");
+    roll.className = "roll";
+    roll.style.gridTemplateColumns = `repeat(${code.length}, 8px)`;
+    for (let r = 4; r >= 1; r--) for (let c = 0; c < code.length; c++) {
+      const i = document.createElement("i");
+      if (+code[c] === r) i.className = "p" + r;
+      roll.append(i);
+    }
+    return roll;
+  }
+
+  function renderEncode() {
+    const { symbols, skipped } = encodeText($("text").value, { end: $("endMark").checked, fixed: isFixed() });
+    const t = timing();
+    state.symbols = symbols;
+    state.midi = buildMidi(symbols, t, +$("program").value, currentSet(), isFixed());
+    state.notes = parseMidi(state.midi);
+    decodeNotes(state.notes);
+    state.noteToToken = symbols.flatMap((s, i) => [...s.code].map(() => i));
+
+    const sk = $("skipped");
+    sk.hidden = !skipped.size;
+    sk.textContent = skipped.size ? `Not in the code, skipped: ${[...skipped].map(c => `“${c}”`).join(" ")}` : "";
+
+    const strip = $("strip");
+    stripOn.reset();
+    strip.replaceChildren(...symbols.map((s, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = s.ctl ? "sym ctl" : "sym"; b.dataset.i = i;
+      b.title = s.ctl ? `${s.ctl.name} = single tone ${s.code}` : `${s.ch === " " ? "space" : s.ch} = ${s.code}`;
+      const ch = document.createElement("span"); ch.className = "ch"; ch.textContent = s.ctl ? s.ctl.g : show(s.ch);
+      const cd = document.createElement("span"); cd.className = "cd"; cd.textContent = s.code;
+      b.append(ch, rollEl(s.code), cd);
+      return b;
+    }));
+    if (!symbols.length) {
+      const p = document.createElement("span"); p.className = "meta"; p.textContent = "Type some text to see its tones.";
+      strip.append(p);
+    }
+    $("codes").textContent = symbols.map(s => s.code).join(" ");
+    const secs = state.notes.length ? state.notes[state.notes.length - 1].start + state.notes[state.notes.length - 1].dur : 0;
+    const typedChars = symbols.filter(s => !s.ctl || s.ctl.key === "enter").length;
+    const perMin = secs ? Math.round(typedChars / secs * 60) : 0;
+    const perChar = typedChars ? (state.notes.length / typedChars).toFixed(2) : "0";
+    $("meta").textContent = `${symbols.length} symbols · ${perChar} tones per character · ${secs.toFixed(1)} s · ${perMin} characters/min`;
+    ["play", "copy"].forEach(id => ($(id).disabled = !symbols.length));
+    state.zip = null;
+    updateDownloadUi();
+    refreshZip();
+    describeListen();
+  }
+
+  // Keep the highlighted item visible by scrolling its own box, not the page.
+  function scrollWithin(box, el) {
+    const top = el.offsetTop, bottom = top + el.offsetHeight;
+    if (top < box.scrollTop) box.scrollTop = top - 8;
+    else if (bottom > box.scrollTop + box.clientHeight) box.scrollTop = bottom - box.clientHeight + 8;
+  }
+  function highlighter(boxId) {
+    let on = -1;
+    const set = i => {
+      const box = $(boxId), kids = box.children;
+      if (i === on && kids[i]?.classList.contains("on")) return;
+      kids[on]?.classList.remove("on");
+      on = i;
+      if (i >= 0 && kids[i]) { kids[i].classList.add("on"); scrollWithin(box, kids[i]); }
+    };
+    set.reset = () => (on = -1);
+    return set;
+  }
+  const stripOn = highlighter("strip"), decodedOn = highlighter("decoded");
+  const highlightStrip = noteIdx => stripOn(noteIdx < 0 ? -1 : state.noteToToken[noteIdx] ?? -1);
+
+  $("text").addEventListener("input", renderEncode);
+  $("program").addEventListener("change", renderEncode);
+  $("soundSet").addEventListener("change", () => { renderSoundChips(); renderEncode(); renderChips(); });
+  $("endMark").addEventListener("change", renderEncode);
+  $("fixed3").addEventListener("change", renderEncode);
+  $("preset").addEventListener("change", () => {
+    const p = PRESETS[$("preset").value];
+    if (p) ["tone", "gapIn", "gapSym"].forEach((id, i) => ($(id).value = p[i]));
+    renderEncode();
+  });
+  ["tone", "gapIn", "gapSym"].forEach(id => $(id).addEventListener("input", () => { $("preset").value = "custom"; renderEncode(); }));
+
+  $("play").addEventListener("click", () => playNotes(state.notes, highlightStrip));
+  $("stop").addEventListener("click", stopAll);
+  $("strip").addEventListener("click", e => {
+    const b = e.target.closest(".sym"); if (!b) return;
+    const i = +b.dataset.i;
+    playNotes(codeNotes(state.symbols[i].code, timing()), n => stripOn(n >= 0 ? i : -1));
+  });
+
+  // Copy buttons show a tick for a moment when the copy worked.
+  function flashDone(btn) {
+    btn.classList.add("done");
+    clearTimeout(btn._t);
+    btn._t = setTimeout(() => btn.classList.remove("done"), 1200);
+  }
+  $("copy").addEventListener("click", async () => {
+    const text = $("codes").textContent;
+    try { await navigator.clipboard.writeText(text); flashDone($("copy")); $("encStatus").textContent = "Copied the codes."; }
+    catch (_) {
+      const r = document.createRange(); r.selectNodeContents($("codes"));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      $("encStatus").textContent = "Codes selected. Press Ctrl+C or ⌘C to copy.";
+    }
+  });
+
+  // ---------- download ----------
+  // "local": opened as a plain file, so normal link downloads work for both formats.
+  // "artifact": the viewer's downloads capability, which accepts .zip but not .mid.
+  let dlMode = "local", dlApi = null, zipToken = 0;
+  const slug = () => $("text").value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32).replace(/-+$/, "") || "four-tone";
+  const fmtSize = n => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
+  // File names carry the settings, so a recording can be decoded without guessing:
+  // hello-world_fifths_practiced-150-50-350ms_flute_3tones_end
+  const instrumentSlug = () => $("program").selectedOptions[0].text.toLowerCase().replace(/\s*\(.*\)/, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  function fileBase() {
+    const [tone, gapIn, gapSym] = timing();
+    return [slug(), currentSet(), `${$("preset").value}-${tone}-${gapIn}-${gapSym}ms`, instrumentSlug(), isFixed() && "3tones", $("endMark").checked && "end"]
+      .filter(Boolean).join("_");
+  }
+  function updateDownloadUi() {
+    const mid = $("download"), zip = $("downloadZip"), empty = !state.symbols.length;
+    mid.hidden = dlMode === "artifact";
+    mid.disabled = empty || dlMode !== "local";
+    zip.disabled = empty || !(dlMode === "local" || dlMode === "artifact");
+    mid.textContent = `Download .mid${empty ? "" : ` · ${fmtSize(state.midi.length)}`}`;
+    zip.textContent = `Download .zip${!empty && state.zip ? ` · ${fmtSize(state.zip.length)}` : ""}`;
+    $("downloadMp3").disabled = empty || !(dlMode === "local" || dlMode === "artifact");
+    $("downloadMp3").textContent = dlMode === "artifact" ? "Download .mp3 (in .zip)" : "Download .mp3";
+    if (dlMode === "none") $("encStatus").textContent = "Saving files isn't available in this view.";
+  }
+  // Build the zip in the background so its size can show on the button.
+  function refreshZip() {
+    const token = ++zipToken;
+    makeZip(fileBase() + ".mid", state.midi).then(z => { if (token === zipToken) { state.zip = z; updateDownloadUi(); } });
+  }
+  function saveLocal(bytes, filename, type) {
+    const url = URL.createObjectURL(new Blob([bytes], { type }));
+    const a = document.createElement("a"); a.href = url; a.download = filename;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  if (window.claude && typeof window.claude.use === "function") {
+    dlMode = "pending";
+    window.claude.use("downloads")
+      .then(api => { dlApi = api; dlMode = api ? "artifact" : "none"; updateDownloadUi(); })
+      .catch(() => { dlMode = "none"; updateDownloadUi(); });
+  }
+  $("download").addEventListener("click", () => {
+    if (dlMode !== "local") return;
+    const name = fileBase();
+    saveLocal(state.midi, name + ".mid", "audio/midi");
+    $("encStatus").textContent = `Saved ${name}.mid (${fmtSize(state.midi.length)}).`;
+  });
+  $("downloadZip").addEventListener("click", async () => {
+    const name = fileBase(), st = $("encStatus");
+    const zip = state.zip || await makeZip(name + ".mid", state.midi);
+    const note = `${fmtSize(zip.length)}, ${Math.max(1, Math.round(state.midi.length / zip.length))}× smaller than the .mid`;
+    if (dlMode === "local") {
+      saveLocal(zip, name + ".zip", "application/zip");
+      st.textContent = `Saved ${name}.zip (${note}). Upload it as it is to decode it.`;
+      return;
+    }
+    if (!dlApi) return;
+    try {
+      await dlApi.save({ filename: name + ".zip", data: zip });
+      st.textContent = `Saved ${name}.zip (${note}). Unzip it to get ${name}.mid, or upload the .zip as it is.`;
+    } catch (e) {
+      const code = e && e.code;
+      st.textContent = code === "declined" ? "Download cancelled."
+        : code === "rate_limited" ? "A save prompt is already open. Finish that one first."
+        : "The file couldn't be saved in this view.";
+    }
+  });
+
+  // ---------- MP3 ----------
+  // Browsers can't make MP3 by themselves, so the encoder (lamejs) loads on first use.
+  let lamePromise = null;
+  function loadLame() {
+    if (window.lamejs?.Mp3Encoder) return Promise.resolve(window.lamejs);
+    return (lamePromise ||= new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.1/lame.min.js";
+      s.onload = () => window.lamejs?.Mp3Encoder ? resolve(window.lamejs) : reject(new Error("The MP3 encoder didn't start."));
+      s.onerror = () => { lamePromise = null; reject(new Error("Couldn't load the MP3 encoder. Check the internet connection and try again.")); };
+      document.head.append(s);
+    }));
+  }
+  // Renders the notes offline in slices of about 20 s, cut just before a note starts
+  // (in the silence a note's fade-out has already finished in), and encodes each slice.
+  async function renderMp3(notes, program, onProgress) {
+    const lame = await loadLame();
+    const sr = 44100, enc = new lame.Mp3Encoder(1, sr, 64), parts = [];
+    const lead = 0.3, tail = 0.6, base = notes[0].start - lead, last = notes[notes.length - 1];
+    for (let i = 0; i < notes.length;) {
+      const from = i === 0 ? 0 : notes[i].start - base;
+      let j = i;
+      while (j < notes.length && notes[j].start - base < from + 20) j++;
+      const to = j < notes.length ? notes[j].start - base : last.start + last.dur - base + tail;
+      const oc = new OfflineAudioContext(1, Math.ceil((to - from) * sr), sr);
+      const out = oc.createGain();
+      out.gain.value = 0.45; out.connect(oc.destination);
+      for (let k = i; k < j; k++) {
+        const n = notes[k], gap = k + 1 < notes.length ? notes[k + 1].start - (n.start + n.dur) : 1;
+        voice(hz(n.pitch), n.start - base - from, n.dur, timbre(n.program ?? program), gap, oc, out, []);
+      }
+      const f = (await oc.startRendering()).getChannelData(0), pcm = new Int16Array(f.length);
+      for (let k = 0; k < f.length; k++) { const v = Math.max(-1, Math.min(1, f[k])); pcm[k] = v < 0 ? v * 0x8000 : v * 0x7fff; }
+      for (let k = 0; k < pcm.length; k += 1152) { const b = enc.encodeBuffer(pcm.subarray(k, k + 1152)); if (b.length) parts.push(new Uint8Array(b)); }
+      onProgress(j / notes.length);
+      i = j;
+    }
+    const end = enc.flush();
+    if (end.length) parts.push(new Uint8Array(end));
+    const mp3 = new Uint8Array(parts.reduce((a, p) => a + p.length, 0));
+    let o = 0; for (const p of parts) { mp3.set(p, o); o += p.length; }
+    return mp3;
+  }
+  $("downloadMp3").addEventListener("click", async () => {
+    if (!state.notes.length) return;
+    const btn = $("downloadMp3"), st = $("encStatus"), name = fileBase();
+    btn.disabled = true;
+    try {
+      st.textContent = "Making the MP3…";
+      const mp3 = await renderMp3(state.notes, +$("program").value, p => (st.textContent = `Making the MP3… ${Math.round(p * 100)}%`));
+      if (dlMode === "local") {
+        saveLocal(mp3, name + ".mp3", "audio/mpeg");
+        st.textContent = `Saved ${name}.mp3 (${fmtSize(mp3.length)}).`;
+      } else if (dlApi) {
+        const zip = await makeZip(name + ".mp3", mp3);
+        await dlApi.save({ filename: name + ".zip", data: zip });
+        st.textContent = `Saved ${name}.zip (${fmtSize(zip.length)}) with ${name}.mp3 inside.`;
+      }
+    } catch (e) {
+      st.textContent = e?.code === "declined" ? "Download cancelled."
+        : e?.code === "rate_limited" ? "A save prompt is already open. Finish that one first."
+        : e?.message || "The MP3 couldn't be made.";
+    } finally { updateDownloadUi(); }
+  });
+
+  // ---------- decoded text ----------
+  // Control keys are drawn by CSS from data-g, so copied text holds only real characters.
+  function charSpan(c, i) {
+    const s = document.createElement("span");
+    s.textContent = c.ch;
+    if (i !== undefined) s.dataset.i = i;
+    if (c.ctl) { s.className = c.ctl.key === "end" ? "ctl end" : "ctl"; s.dataset.g = c.ctl.g; s.title = c.ctl.name; }
+    else if (!c.ok) { s.className = "bad"; s.title = `Tones ${c.code || "(none)"} don't match a character`; }
+    return s;
+  }
+  // Streaming tone decoder. A short RMS envelope (1.5 ms hops) finds where tones start
+  // and stop; Goertzel filters tuned to the set's four pitches pick which pitch each
+  // tone was. Symbols are split by the time between tone starts.
+  class ToneDecoder {
+    constructor(sr, timing, on, setKey = "fifths") {
+      this.sr = sr; this.on = on; this.setKey = setKey;
+      this.H = Math.max(32, Math.round(sr * 0.0015));
+      this.hopMs = this.H / sr * 1000;
+      this.nf = 0.0005; this.pk = 0; this.state = 0; this.seg = null;
+      this.offMs = 0; this.sinceOnset = 1e9; this.digits = [];
+      this.acc = 0; this.accSq = 0; this.hops = 0; this.level = 0;
+      this.configure(timing);
+    }
+    configure([tone, gapIn, gapSym]) {
+      this.det = makeDetector(this.setKey, this.sr);
+      this.bands = [0, 0, 0, 0];
+      this.N = Math.round(this.sr * Math.min(0.04, Math.max(0.004, tone / 1000 * 0.8)));
+      this.buf = new Float32Array(this.N); this.w = 0; this.filled = 0;
+      this.pitchEvery = Math.max(1, Math.round(this.N / 4 / this.H));
+      this.windowMs = this.N / this.sr * 1000;
+      this.minTone = Math.max(2 * this.hopMs, tone * 0.35);
+      this.minOff = Math.max(this.hopMs, gapIn * 0.4);
+      this.onsetGap = (2 * tone + gapIn + gapSym) / 2;
+      this.toneMs = tone;
+      this.gapInMs = gapIn;
+    }
+    feed(x) {
+      const N = this.N, buf = this.buf;
+      for (let i = 0; i < x.length; i++) {
+        const v = x[i];
+        buf[this.w] = v;
+        if (++this.w === N) this.w = 0;
+        if (this.filled < N) this.filled++;
+        this.accSq += v * v;
+        if (++this.acc === this.H) { this.hop(Math.sqrt(this.accSq / this.H)); this.acc = 0; this.accSq = 0; }
+      }
+    }
+    meter() { return this.det.meter(this.bands, this.pk, this.level); }
+    hop(level) {
+      if (this.hops++ % this.pitchEvery === 0) this.bands = this.det.hop(this.buf, this.filled, this.w, this.N);
+      const b = this.bands, m = b.length;
+      this.level = level;
+      this.sinceOnset += this.hopMs;
+      const thrOn = Math.max(this.nf * 4, this.pk * 0.18, 0.002);
+      // A tone also ends when it falls well below its own peak, so an echo or a slow
+      // fade doesn't join it to the next tone.
+      const thrOff = Math.max(this.nf * 2.5, this.pk * 0.09, this.seg ? this.seg.peak * 0.15 : 0, 0.0012);
+      // The first 150 ms only learn how loud the background is.
+      const learning = this.hops * this.hopMs < 150;
+      if (this.state === 0) {
+        if (level > thrOn && !learning) {
+          this.state = 1; this.offMs = 0;
+          this.seg = { ms: 0, peak: level, all: new Array(m).fill(0), clean: new Array(m).fill(0), nClean: 0, votes: [] };
+        } else {
+          // The noise estimate settles quickly at first, then follows slowly.
+          this.nf += (level < this.nf ? 0.2 : this.hops < 400 ? 0.03 : 0.002) * (level - this.nf);
+          if (this.digits.length && this.sinceOnset > this.onsetGap) this.flush();
+        }
+      }
+      if (this.state === 1) {
+        const s = this.seg;
+        s.ms += this.hopMs;
+        s.peak = Math.max(s.peak, level);
+        this.pk = Math.max(this.pk, level);
+        for (let k = 0; k < m; k++) s.all[k] += b[k];
+        // Which pitch this moment sounds like; quiet moments don't vote.
+        s.votes.push(level > s.peak * 0.15 ? this.det.decide(b) : -1);
+        if (s.ms >= this.windowMs && this.offMs === 0) { for (let k = 0; k < m; k++) s.clean[k] += b[k]; s.nClean++; }
+        if (level < thrOff) { this.offMs += this.hopMs; if (this.offMs >= this.minOff) this.endTone(); }
+        else this.offMs = 0;
+      }
+      this.pk *= 0.9995;
+    }
+    endTone() {
+      const s = this.seg, len = s.ms - this.offMs;
+      this.state = 0; this.seg = null;
+      // Too short to be a tone: a click or noise, which doesn't restart the symbol clock.
+      if (len < this.minTone) return;
+      // Date the tone from its start, or, if noise just before it started the segment
+      // early, from one tone length before it ended.
+      this.sinceOnset = Math.min(s.ms, this.toneMs + this.offMs);
+      for (const d of this.splitTones(s, len)) {
+        this.digits.push(d + 1);
+        this.on.partial?.(this.digits);
+        if (this.digits.length === 3) this.flush();
+      }
+    }
+    // Echo, a room, or MP3 can fill the short gap between tones, so one sound may hold
+    // two or three tones. Its length says how many; where its pitch changes says which.
+    // A sound one tone long is decided as a whole, as before.
+    splitTones(s, len) {
+      const unit = this.toneMs + this.gapInMs, x = (len + this.gapInMs) / unit;
+      const k = x < 1.6 ? 1 : x < 2.6 ? 2 : 3;
+      const whole = this.det.decide(s.nClean ? s.clean : s.all);
+      if (k === 1) return [whole];
+      // The first moments still hear the previous tone through the pitch window.
+      const skip = Math.max(0, Math.round((this.windowMs - this.gapInMs) / this.hopMs));
+      const runs = [];
+      for (const v of s.votes.slice(skip)) {
+        if (v < 0) continue;
+        const r = runs[runs.length - 1];
+        if (r && r.d === v) r.n++; else runs.push({ d: v, n: 1 });
+      }
+      const minRun = Math.max(2, Math.round(this.minTone * 0.5 / this.hopMs));
+      let parts = [];
+      for (const r of runs) {
+        if (r.n < minRun) continue;                     // flickers between pitches
+        const last = parts[parts.length - 1];
+        if (last && last.d === r.d) last.n += r.n; else parts.push({ ...r });
+      }
+      if (!parts.length) return Array(k).fill(whole);
+      if (parts.length > k) {
+        const longest = [...parts].sort((a, b) => b.n - a.n).slice(0, k);
+        parts = parts.filter(r => longest.includes(r));
+      }
+      // Share the k tones between the pitch runs by how long each one lasts.
+      const total = parts.reduce((a, r) => a + r.n, 0);
+      const counts = parts.map(r => Math.max(1, Math.round(k * r.n / total)));
+      let sum = counts.reduce((a, b) => a + b, 0);
+      while (sum > k) { counts[counts.indexOf(Math.max(...counts))]--; sum--; }
+      while (sum < k) {
+        let best = 0;
+        parts.forEach((r, i) => { if (r.n / counts[i] > parts[best].n / counts[best]) best = i; });
+        counts[best]++; sum++;
+      }
+      return parts.flatMap((r, i) => Array(counts[i]).fill(r.d));
+    }
+    // 3 tones are sent at once; 1 or 2 tones wait until the next symbol is overdue.
+    flush() {
+      const code = this.digits.join("");
+      this.digits = [];
+      this.on.code(code);
+      this.on.partial?.([]);
+    }
+    finish() {
+      if (this.state === 1) { this.offMs = 0; this.endTone(); }
+      if (this.digits.length) this.flush();
+    }
+  }
+
+  // ---------- decode: one section, three sources ----------
+  // File: a .mid (exact, it carries its settings), a .zip holding one, or a recording.
+  // Microphone and This page: live sound. Recordings and live sound need the pitch set,
+  // speed and code length; the page's own file names carry them.
+  const inArtifact = !!(window.claude && typeof window.claude.use === "function");
+  const AUDIO_EXT = /\.(mp3|wav|m4a|aac|ogg|oga|opus|webm|flac)$/i;
+  const MODE_HELP = {
+    file: "A .mid or .zip made on this page decodes exactly. A recording, such as an .mp3, is decoded from its sound; if this page made it, its settings come from the file name.",
+    mic: inArtifact
+      ? "The published page can't use the microphone. Open four-tone-code.html from your computer in Chrome, Edge or Firefox to listen with it."
+      : "Play the tones near your microphone. A quiet room and a loud, clear speaker work best.",
+    page: "Decodes whatever this page plays: Play in Encode, the Practice sounds, or codebook clicks.",
+  };
+  let mode = "file", live = null, loaded = null, meterRaf = 0, liveCount = 0, fileTiming = null, fromFile = false;
+  // Short names, so Decode's three settings fit on one row.
+  [...$("preset").options].forEach(o => {
+    if (o.value !== "custom") $("lSpeed").add(new Option(o.value.startsWith("x") ? `${o.value.slice(1)}×` : o.text, o.value));
+  });
+  Object.entries(SOUND_SETS).forEach(([k, v]) => $("lSet").add(new Option(v.name, k)));
+  const listenTiming = () => {
+    const k = $("lSpeed").value;
+    return k === "encode" ? timing() : k === "file" ? fileTiming : PRESETS[k];
+  };
+  const listenSet = () => $("lSet").value === "encode" ? currentSet() : $("lSet").value;
+  const listenFixed = () => $("lLen").value === "encode" ? isFixed() : $("lLen").value === "fixed";
+  const midiLoaded = () => mode === "file" && loaded?.kind === "midi";
+
+  // Page file names look like hello_fifths_practiced-150-50-350ms_flute_3tones.mp3
+  function parseFileName(name) {
+    const m = name.match(/_(fifths|chord)_[a-z0-9]+-(\d+)-(\d+)-(\d+)ms/i);
+    return m && { setKey: m[1].toLowerCase(), timing: m.slice(2, 5).map(Number), fixed: /_3tones(?:[_.]|$)/i.test(name) };
+  }
+  function applySettings({ setKey, timing: t, fixed }, locked) {
+    fromFile = true;
+    if (setKey) $("lSet").value = setKey;
+    $("lLen").value = fixed ? "fixed" : "mixed";
+    if (t) {
+      const preset = Object.keys(PRESETS).find(k => PRESETS[k].every((v, i) => v === t[i]));
+      if (preset) $("lSpeed").value = preset;
+      else {
+        let o = $("lSpeed").querySelector('option[value="file"]');
+        if (!o) { o = new Option("", "file"); $("lSpeed").add(o); }
+        o.text = `File: ${t.join("/")}`;
+        fileTiming = t;
+        $("lSpeed").value = "file";
+      }
+    }
+    ["lSet", "lSpeed", "lLen"].forEach(id => ($(id).disabled = locked));
+  }
+  function describeListen() {
+    if (midiLoaded()) { $("lInfo").textContent = "A MIDI file carries its own settings."; return; }
+    const t = listenTiming(), k = $("lSpeed").value;
+    const name = k === "encode" ? `the Encode speed (${$("preset").selectedOptions[0].text})` : k === "file" ? "the file's speed" : $("lSpeed").selectedOptions[0].text;
+    $("lInfo").textContent = `Listening for ${soundSet(listenSet()).name}${listenFixed() ? ", 3 tones only," : ""} at ${name}: ${t[0]} ms tones, ${t[1]} ms gaps inside a symbol, ${t[2]} ms between symbols.`;
+    if (live) { live.dec.setKey = listenSet(); live.dec.configure(t); }
+  }
+  function updateDecodeUi() {
+    const isFile = mode === "file", audioFile = isFile && loaded?.kind === "audio";
+    document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
+    $("drop").hidden = !isFile;
+    $("source").hidden = !isFile;
+    $("modeHelp").textContent = MODE_HELP[mode];
+    $("lStart").textContent = midiLoaded() ? "Play file" : isFile ? "Play and decode" : "Start listening";
+    $("lStart").disabled = !!live || (isFile && !loaded);
+    $("lNow").hidden = !audioFile;
+    $("meters").hidden = isFile && !audioFile;
+    if (!midiLoaded()) ["lSet", "lSpeed", "lLen"].forEach(id => ($(id).disabled = false));
+    describeListen();
+  }
+  function setMode(m) {
+    if (live) stopLive();
+    stopAll();
+    // Settings taken from a file belong to that file, not to live listening.
+    if (m !== "file" && fromFile) {
+      ["lSet", "lSpeed", "lLen"].forEach(id => ($(id).value = "encode"));
+      fromFile = false;
+    }
+    mode = m;
+    $("lStatus").textContent = "";
+    updateDecodeUi();
+  }
+
+  function clearOutput() {
+    $("decoded").replaceChildren();
+    decodedOn.reset();
+    liveCount = 0;
+    $("lCount").textContent = "";
+    $("decCodes").textContent = "";
+    $("decCodeLine").hidden = true;
+    $("decWarn").hidden = true;
+  }
+  function showWarning(text) { $("decWarn").hidden = !text; $("decWarn").textContent = text || ""; }
+  function liveChar(c) {
+    const out = $("decoded");
+    out.append(charSpan(c));
+    out.scrollTop = out.scrollHeight;
+    if (c.ch) liveCount++;
+    $("lCount").textContent = `${liveCount} characters`;
+    if (c.ctl?.key === "end") $("lStatus").textContent = "End of message received.";
+  }
+  const typed = () => { const t = new Typist(); return code => { t.fixed = listenFixed(); liveChar(t.push(code)); }; };
+  const showPartial = d => ($("lPartial").textContent = [0, 1, 2].map(i => d[i] ?? "·").join(" "));
+  const fills = [...document.querySelectorAll("#meters .fill")];
+  function drawMeters(dec) {
+    const v = dec ? dec.meter() : [0, 0, 0, 0];
+    fills.forEach((f, k) => (f.style.transform = `scaleY(${v[k] || 0})`));
+  }
+
+  // ---- files ----
+  function showMidi(name, bytes) {
+    const notes = parseMidi(bytes), result = decodeNotes(notes);
+    loaded = { kind: "midi", name, notes, result };
+    clearOutput();
+    $("decoded").append(...result.chars.map((c, i) => charSpan(c, i)));
+    liveCount = result.chars.filter(c => c.ch).length;
+    $("lCount").textContent = `${liveCount} characters`;
+    $("decCodes").textContent = result.chars.map(c => c.code).join(" ");
+    $("decCodeLine").hidden = !result.chars.length;
+    showWarning(result.warn.join(" "));
+    $("source").textContent = `${name}: ${notes.length} tones, ${result.chars.length} symbols. Pitch set: ${SOUND_SETS[result.setKey]?.name ?? "not one of the page's"}${notes.fixed ? ", 3 tones only" : ""}, played as ${VOICES[timbre(notes.program)].name}.`;
+    applySettings({ setKey: result.setKey, timing: notes.timing, fixed: notes.fixed }, true);
+  }
+  async function showAudio(name, bytes) {
+    const buf = await audio().decodeAudioData(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+    loaded = { kind: "audio", name, buf };
+    clearOutput();
+    const p = parseFileName(name);
+    if (p) applySettings(p, false);
+    $("source").textContent = `${name} (${buf.duration.toFixed(1)} s). ` + (p
+      ? "Settings read from the file name."
+      : "Set the pitch set, speed and code length to match how it was made.");
+  }
+  async function handleFile(file) {
+    if (!file) return;
+    if (live) stopLive();
+    stopAll();
+    let u = new Uint8Array(await file.arrayBuffer()), name = file.name, inner = file.name;
+    try {
+      if (u[0] === 0x50 && u[1] === 0x4b) { const z = await fileFromZip(u); u = z.bytes; inner = z.name; name = `${file.name} › ${z.name}`; }
+      const isMidi = u[0] === 0x4d && u[1] === 0x54 && u[2] === 0x68 && u[3] === 0x64;
+      if (isMidi) showMidi(name, u);
+      else if (AUDIO_EXT.test(inner) || (file.type || "").startsWith("audio/")) await showAudio(name, u);
+      else throw new Error(`${inner} isn't a MIDI file or a recording this page can read.`);
+      $("lStatus").textContent = "";
+    } catch (e) {
+      loaded = null;
+      clearOutput();
+      $("source").textContent = file.name;
+      showWarning(e.message && !/decode/i.test(e.name || "") ? e.message : `This browser can't read ${inner} as audio. Try an MP3 or WAV file.`);
+    }
+    updateDecodeUi();
+  }
+
+  // ---- live sound: a recording playing, the microphone, or this page ----
+  async function startLive() {
+    if (live) stopLive();
+    const st = $("lStatus");
+    const c = audio();
+    const dec = new ToneDecoder(c.sampleRate, listenTiming(), { code: typed(), partial: showPartial }, listenSet());
+    const proc = c.createScriptProcessor(2048, 1, 1);
+    proc.onaudioprocess = e => dec.feed(e.inputBuffer.getChannelData(0));
+    const session = { dec, proc, nodes: [], stream: null };
+    if (mode === "mic") {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        st.textContent = inArtifact ? MODE_HELP.mic : "This browser doesn't offer the microphone to files opened from disk. Try Chrome, Edge or Firefox.";
+        return;
+      }
+      try {
+        session.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+      } catch (_) {
+        st.textContent = inArtifact ? MODE_HELP.mic : "Microphone access was blocked. Allow it for this page in the browser, then press Start listening again.";
+        return;
+      }
+      const src = c.createMediaStreamSource(session.stream);
+      src.connect(proc); session.nodes.push(src);
+      st.textContent = "Listening to the microphone…";
+    } else if (mode === "page") {
+      master.connect(proc);
+      session.nodes.push({ disconnect: () => master.disconnect(proc) });
+      st.textContent = "Listening to this page. Press Play in Encode.";
+    } else {
+      clearOutput();
+      const src = c.createBufferSource();
+      src.buffer = loaded.buf;
+      src.connect(c.destination); src.connect(proc); session.nodes.push(src);
+      src.onended = () => setTimeout(() => { if (live === session) stopLive(`Finished ${loaded.name}.`); }, 250);
+      src.start();
+      st.textContent = `Playing and decoding ${loaded.name}…`;
+    }
+    proc.connect(c.destination);
+    live = session;
+    updateDecodeUi();
+    const loop = () => { if (live !== session) return; drawMeters(dec); meterRaf = requestAnimationFrame(loop); };
+    loop();
+  }
+  function stopLive(message = "Stopped.") {
+    if (!live) return;
+    const s = live;
+    live = null;
+    s.dec.finish();
+    s.proc.onaudioprocess = null;
+    try { s.proc.disconnect(); } catch (_) {}
+    s.nodes.forEach(n => { try { n.stop?.(); } catch (_) {} try { n.disconnect(); } catch (_) {} });
+    s.stream?.getTracks().forEach(t => t.stop());
+    cancelAnimationFrame(meterRaf);
+    drawMeters(null);
+    showPartial([]);
+    $("lStatus").textContent = message;
+    updateDecodeUi();
+  }
+  async function decodeNow() {
+    if (loaded?.kind !== "audio") return;
+    if (live) stopLive();
+    const st = $("lStatus"), b = loaded.buf, mono = new Float32Array(b.length);
+    for (let ch = 0; ch < b.numberOfChannels; ch++) {
+      const d = b.getChannelData(ch);
+      for (let i = 0; i < d.length; i++) mono[i] += d[i] / b.numberOfChannels;
+    }
+    clearOutput();
+    const dec = new ToneDecoder(b.sampleRate, listenTiming(), { code: typed(), partial: showPartial }, listenSet());
+    const step = b.sampleRate * 2;
+    $("lNow").disabled = $("lStart").disabled = true;
+    for (let i = 0; i < mono.length; i += step) {
+      dec.feed(mono.subarray(i, i + step));
+      st.textContent = `Decoding ${loaded.name}: ${Math.round(Math.min(1, (i + step) / mono.length) * 100)}%`;
+      await new Promise(r => setTimeout(r, 0));
+    }
+    dec.finish();
+    showPartial([]);
+    $("lNow").disabled = $("lStart").disabled = false;
+    st.textContent = `Decoded ${loaded.name} (${b.duration.toFixed(1)} s of audio).`;
+  }
+
+  document.querySelectorAll("#modes button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
+  ["lSpeed", "lSet", "lLen"].forEach(id => $(id).addEventListener("change", describeListen));
+  $("lStart").addEventListener("click", () => {
+    if (midiLoaded()) {
+      const { notes, result } = loaded;
+      playNotes(notes, n => decodedOn(n < 0 ? -1 : result.noteToChar[n]), notes.program);
+    } else startLive();
+  });
+  $("lStop").addEventListener("click", () => { stopLive(); stopAll(); });
+  $("lNow").addEventListener("click", decodeNow);
+  $("file").addEventListener("change", e => { handleFile(e.target.files[0]); e.target.value = ""; });
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => handleFile(e.dataTransfer.files[0]));
+  $("lClear").addEventListener("click", () => { clearOutput(); $("lStatus").textContent = ""; });
+  $("lCopy").addEventListener("click", async () => {
+    const text = $("decoded").textContent;
+    try { await navigator.clipboard.writeText(text); flashDone($("lCopy")); $("lStatus").textContent = "Copied the decoded text."; }
+    catch (_) {
+      const r = document.createRange(); r.selectNodeContents($("decoded"));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      $("lStatus").textContent = "Text selected. Press Ctrl+C or ⌘C to copy.";
+    }
+  });
+  setMode("file");
+
+
+  // ---------- practice quiz ----------
+  const WORDS = ("the of and to in is you that it he was for on are as with his they at be this have from or one had by word but not what all were we when your can said there use an each which she do how their if will up other about out many then them these so some her would make like him into time has look two more write go see number no way could people my than first water been call who oil its now find long down day did get come made may part over new sound take only little work know place year live me back give most very after thing our just name good sentence man think say great where help through much before line right too mean old any same tell boy follow came want show also around form three small set put end does another well large must big even such because turn here why ask went men read need land different home us move try kind hand picture again change off play spell air away animal house point page letter mother answer found study still learn should world").split(" ");
+  const POOLS = {
+    letters: [..."abcdefghijklmnopqrstuvwxyz"],
+    alnum: [..."abcdefghijklmnopqrstuvwxyz0123456789"],
+    all: [...new Set([..."abcdefghijklmnopqrstuvwxyz0123456789 ", ...LAYERS.join("").toLowerCase(), ...Object.keys(SHIFT_BASE)])],
+  };
+  const STATS_KEY = "four-tone-quiz-v1";
+  let qStats = {};
+  try { qStats = JSON.parse(localStorage.getItem(STATS_KEY) || "{}") || {}; } catch (_) { qStats = {}; }
+  const saveStats = () => { try { localStorage.setItem(STATS_KEY, JSON.stringify(qStats)); } catch (_) {} };
+  const q = { mode: "char", item: null, answered: false, total: 0, right: 0, streak: 0, timer: 0 };
+
+  const qPool = () => q.mode === "pitch" ? ["1", "2", "3", "4"] : POOLS[$("qPool").value];
+  const statKey = x => (q.mode === "pitch" ? `sound:${currentSet()}:` : "") + x;
+  const accuracy = x => { const s = qStats[statKey(x)]; return s ? (s[1] + 1) / (s[0] + 2) : 0.5; };
+  function pick() {
+    if (q.mode === "word") {
+      let w; do { w = WORDS[Math.floor(Math.random() * WORDS.length)]; } while (w === q.item && WORDS.length > 1);
+      return w;
+    }
+    const pool = qPool().filter(x => x !== q.item);
+    const weights = pool.map(x => 1 + 4 * (1 - accuracy(x)));
+    let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < pool.length; i++) if ((r -= weights[i]) <= 0) return pool[i];
+    return pool[pool.length - 1];
+  }
+  const codeFor = x => q.mode === "pitch" ? x : encodeText(x, { fixed: isFixed() }).symbols.map(s => s.code).join(" ");
+  const label = x => q.mode === "pitch" ? `${x} (${soundSet(currentSet()).labels[+x - 1]})` : x === " " ? "space" : x;
+  function playItem() {
+    if (!q.item) return;
+    if (q.mode === "pitch") playNotes(codeNotes(q.item, timing()), null);
+    else playNotes(notesFor(q.item), null);
+  }
+  function nextItem() {
+    clearTimeout(q.timer);
+    q.item = pick(); q.answered = false;
+    $("qAnswer").value = "";
+    $("qFeedback").textContent = ""; $("qFeedback").className = "quiz-feedback";
+    $("qPrompt").textContent = q.mode === "pitch" ? "Which pitch was it? Press 1, 2, 3 or 4."
+      : q.mode === "char" ? "Which character was it? Press its key." : "Which word was it? Type it and press Enter.";
+    $("qAnswer").focus();
+    playItem();
+  }
+  function grade(answer, revealed = false) {
+    if (!q.item || q.answered) return;
+    q.answered = true;
+    const ok = !revealed && answer.trim().toLowerCase() === q.item.trim().toLowerCase() && (answer !== "" || q.item === " ");
+    const exact = !revealed && q.item === " " && answer === " ";
+    const right = ok || exact;
+    q.total++; if (right) { q.right++; q.streak++; } else q.streak = 0;
+    if (q.mode !== "word") {
+      const s = (qStats[statKey(q.item)] ||= [0, 0]);
+      s[0]++; if (right) s[1]++;
+      saveStats(); renderChips();
+    }
+    const fb = $("qFeedback");
+    fb.className = "quiz-feedback " + (right ? "ok" : "no");
+    fb.textContent = right ? `✓ Correct: ${label(q.item)} (${codeFor(q.item)})`
+      : revealed ? `It was ${label(q.item)} (${codeFor(q.item)}).`
+      : `✗ It was ${label(q.item)} (${codeFor(q.item)}). You typed ${label(answer) || "nothing"}.`;
+    $("qScore").textContent = `${q.right}/${q.total} correct · streak ${q.streak}`;
+    if (right && q.mode !== "word") q.timer = setTimeout(nextItem, 700);
+  }
+  function renderChips() {
+    $("qChipsLabel").textContent = q.mode === "pitch" ? `Accuracy by pitch (${soundSet(currentSet()).name})` : "Accuracy by character";
+    const items = q.mode === "pitch" ? ["1", "2", "3", "4"] : POOLS[$("qPool").value];
+    const key = statKey;
+    $("qChips").replaceChildren(...items.map(x => {
+      const s = qStats[key(x)], c = document.createElement("span");
+      c.className = "chip";
+      const b = document.createElement("span"); b.textContent = x === " " ? "␣" : x;
+      if (q.mode === "pitch") c.title = soundSet(currentSet()).labels[+x - 1];
+      const small = document.createElement("small");
+      if (s && s[0]) {
+        const pct = Math.round(s[1] / s[0] * 100);
+        small.textContent = pct + "%";
+        c.style.background = `color-mix(in srgb, color-mix(in srgb, var(--p2) ${pct}%, var(--p4)) 26%, var(--surface))`;
+        c.title = `${label(x)}: ${s[1]} of ${s[0]} correct`;
+      } else { small.textContent = "–"; c.title = `${label(x)}: not tried yet`; }
+      c.append(b, small);
+      return c;
+    }));
+  }
+  function setQuizMode(m) {
+    q.mode = m; q.item = null; q.answered = false; clearTimeout(q.timer);
+    document.querySelectorAll("#qModes button").forEach(b => b.setAttribute("aria-pressed", b.dataset.q === m));
+    $("qPoolField").hidden = m !== "char";
+    $("qAnswer").value = ""; $("qFeedback").textContent = "";
+    $("qPrompt").textContent = "Press Next to hear the first one.";
+    renderChips();
+  }
+  document.querySelectorAll("#qModes button").forEach(b => b.addEventListener("click", () => setQuizMode(b.dataset.q)));
+  $("qPool").addEventListener("change", () => { q.item = null; renderChips(); });
+  $("qNext").addEventListener("click", nextItem);
+  $("qReplay").addEventListener("click", () => { playItem(); $("qAnswer").focus(); });
+  $("qReveal").addEventListener("click", () => grade("", true));
+  $("qReset").addEventListener("click", () => { qStats = {}; saveStats(); renderChips(); });
+  $("qAnswer").addEventListener("input", e => {
+    if (q.mode === "word" || !q.item) return;
+    const v = e.target.value;
+    if (q.answered) { e.target.value = ""; return; }
+    if (v) grade(v.slice(-1));
+  });
+  $("qAnswer").addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    if (!q.item || q.answered) nextItem();
+    else if (q.mode === "word") grade(e.target.value);
+  });
+  setQuizMode("char");
+
+  // ---------- pitches ----------
+  function renderSoundChips() {
+    const set = soundSet(currentSet());
+    $("pitches").replaceChildren(...set.labels.map((name, i) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "pitch";
+      b.innerHTML = `<b class="p${i + 1}">${i + 1}</b>${name} <span>${Math.round(hz(set.notes[i]))} Hz</span>`;
+      b.addEventListener("click", () => playNotes(codeNotes(String(i + 1), [450, 0]), null));
+      return b;
+    }));
+  }
+  renderSoundChips();
+
+  // ---------- codebook ----------
+  const nameOf = ch => ch === " " ? "space" : ch;
+  const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  function codeCell(td, code, text, title, cls) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = text; b.title = title;
+    if (cls) b.className = cls;
+    b.addEventListener("click", () => playNotes(codeNotes(code, timing()), null));
+    td.append(b);
+  }
+  // A 4-column table; `rows` are the row labels (the tones before the last one).
+  function gridTable(caption, rows, cell) {
+    const t = document.createElement("table");
+    t.createCaption().innerHTML = caption;
+    const hr = t.insertRow();
+    hr.append(document.createElement("th"));
+    for (let c = 1; c <= 4; c++) hr.append(Object.assign(document.createElement("th"), { textContent: c, scope: "col" }));
+    rows.forEach(r => {
+      const row = t.insertRow();
+      row.append(Object.assign(document.createElement("th"), { textContent: r, scope: "row" }));
+      for (let c = 1; c <= 4; c++) cell(row.insertCell(), r, c);
+    });
+    return t;
+  }
+  const oneTone = gridTable("<b>1 tone</b> <span>space, E, T, A</span>", [""], (td, r, c) => {
+    const ch = DEC[c];
+    codeCell(td, `${c}`, show(ch), `${nameOf(ch)} = ${c}`);
+  });
+  const twoTones = gridTable("<b>2 tones</b> <span>letters, then keys</span>", [1, 2, 3, 4], (td, r, c) => {
+    const code = `${r}${c}`, k = CTRL[code];
+    if (k) codeCell(td, code, k.g, `${k.name} = ${code}`, "key");
+    else codeCell(td, code, DEC[code], `${DEC[code]} = ${code}`);
+  });
+  const legend = document.createElement("div");
+  legend.className = "legend";
+  legend.innerHTML = `<h4>Keys</h4><dl>${KEYS.map(k =>
+      `<div><dt><code>${k.g}</code> ${LONG_CODE_OF[k.key]} · ${CODE_OF[k.key]}</dt><dd><b>${k.name}</b>: ${k.desc}</dd></div>`).join("")}</dl>`
+    + `<h4>With Shift</h4>`;
+  // Each Shift symbol as a small key: the symbol, and the key it's typed with. Click to hear.
+  const pairs = document.createElement("div");
+  pairs.className = "pairs";
+  pairs.append(...Object.entries(SHIFT_BASE).map(([up, key]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "shift-key"; b.title = `${up} = Shift + ${key}`;
+    b.setAttribute("aria-label", `${up}, Shift plus ${key}`);
+    const sym = document.createElement("b"); sym.textContent = up;
+    const how = document.createElement("span"); how.textContent = `⇧ ${key}`;
+    b.append(sym, how);
+    b.addEventListener("click", () => playNotes(notesFor(up), null));
+    return b;
+  }));
+  legend.append(pairs);
+  $("bookShort").replaceChildren(oneTone, twoTones, legend);
+
+  $("book").replaceChildren(...LAYERS.map((chars, l) =>
+    gridTable(`<b>${l + 1}xx</b> <span>${LAYER_NAMES[l]}</span>`, [1, 2, 3, 4], (td, r, c) => {
+      const code = `${l + 1}${r}${c}`, k = CTRL[code];
+      if (k) return codeCell(td, code, k.g, `${k.name} = ${code}, or ${CODE_OF[k.key]} for short`, "key short");
+      const ch = DEC[code], short = SHORT[ch];
+      codeCell(td, code, show(ch), `${nameOf(ch)} = ${code}${short ? `, or ${short} for short` : ""}`, short ? "short" : "");
+    })));
+
+  // ---------- collapsible sections ----------
+  document.querySelectorAll(".panel").forEach(panel => {
+    const h = panel.querySelector("h2"), id = panel.getAttribute("aria-labelledby");
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "fold"; btn.textContent = h.textContent;
+    h.replaceChildren(btn);
+    const key = "fold3:" + id;
+    const setOpen = open => {
+      panel.classList.toggle("collapsed", !open);
+      btn.setAttribute("aria-expanded", String(open));
+    };
+    // Encode and Decode start open, everything else folded, until the viewer changes it.
+    let open = id === "enc-h" || id === "dec-h";
+    try { const saved = localStorage.getItem(key); if (saved !== null) open = saved === "1"; } catch (_) {}
+    setOpen(open);
+    btn.addEventListener("click", () => {
+      const next = panel.classList.contains("collapsed");
+      setOpen(next);
+      try { localStorage.setItem(key, next ? "1" : "0"); } catch (_) {}
+    });
+  });
+
+  renderEncode();
+  updateDownloadUi();
+})();
+</script>
+</body>
+</html>

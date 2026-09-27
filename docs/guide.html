@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Four-Tone Code: theory and user guide</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 18mm; }
+  @page { @bottom-center { content: counter(page); font: 9pt "Avenir Next", "Helvetica Neue", sans-serif; color: #56655F; } }
+  :root {
+    --ink: #131C19; --muted: #56655F; --line: #D3DBD8; --soft: #EEF1F0;
+    --p1: #3949A3; --p2: #12837A; --p3: #C08312; --p4: #CF4A33;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; color: var(--ink); font: 10.5pt/1.5 "Avenir Next", "Helvetica Neue", Helvetica, sans-serif; }
+  h1 { font: 700 30pt/1.05 "Avenir Next", sans-serif; margin: 0 0 6pt; letter-spacing: -0.01em; }
+  h2 { font: 700 17pt/1.2 "Avenir Next", sans-serif; margin: 22pt 0 8pt; break-after: avoid; }
+  h3 { font: 600 12pt/1.3 "Avenir Next", sans-serif; margin: 14pt 0 5pt; break-after: avoid; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 16pt; }
+  li { margin-bottom: 3pt; }
+  code, .mono { font-family: Menlo, "SF Mono", monospace; font-size: 9.2pt; }
+  .part { break-before: page; }
+  .part-label { font: 600 9pt "Avenir Next", sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 2pt; }
+  .part-title { font: 700 24pt/1.1 "Avenir Next", sans-serif; margin: 0 0 12pt; }
+  .lead { font-size: 12pt; color: var(--muted); max-width: 150mm; }
+  .note { border-left: 3px solid var(--line); padding: 2pt 0 2pt 9pt; color: var(--muted); margin: 8pt 0; }
+  table { border-collapse: collapse; margin: 6pt 0 10pt; break-inside: avoid; }
+  th, td { text-align: left; vertical-align: top; padding: 3.5pt 8pt 3.5pt 0; border-bottom: 1px solid var(--line); }
+  th { font-weight: 600; font-size: 9pt; color: var(--muted); white-space: nowrap; }
+  .wide { width: 100%; }
+  .num { font-variant-numeric: tabular-nums; }
+  .d1 { color: var(--p1); font-weight: 700; } .d2 { color: var(--p2); font-weight: 700; }
+  .d3 { color: var(--p3); font-weight: 700; } .d4 { color: var(--p4); font-weight: 700; }
+  .dot { display: inline-block; width: 8pt; height: 8pt; border-radius: 50%; vertical-align: -0.5pt; margin-right: 4pt; }
+  .cover { height: 250mm; display: flex; flex-direction: column; justify-content: space-between; }
+  .cover .pitches { display: flex; gap: 8pt; margin: 18pt 0; }
+  .cover .pitch { border: 1px solid var(--line); border-radius: 999px; padding: 4pt 10pt 4pt 5pt; font: 10pt Menlo, monospace; }
+  .cover .pitch b { display: inline-block; width: 15pt; height: 15pt; line-height: 15pt; border-radius: 50%; color: #fff; text-align: center; margin-right: 5pt; font-family: "Avenir Next", sans-serif; }
+  .toc { columns: 2; column-gap: 12mm; font-size: 10.5pt; }
+  .toc div { break-inside: avoid; margin-bottom: 3pt; }
+  .toc .h { font-weight: 600; margin-top: 6pt; }
+  /* codebook tables */
+  .books { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5mm; margin: 6pt 0 10pt; break-inside: avoid; }
+  .books.two { grid-template-columns: 1fr 1.4fr; }
+  .book table { width: 100%; margin: 0; }
+  .book caption { text-align: left; font: 600 9.5pt "Avenir Next", sans-serif; padding-bottom: 3pt; }
+  .book caption span { color: var(--muted); font-weight: 400; }
+  .book th, .book td { text-align: center; padding: 2.5pt 0; border: 0; }
+  .book th { font: 8pt Menlo, monospace; }
+  .book td { font: 700 11pt Menlo, monospace; background: var(--soft); border: 2px solid #fff; border-radius: 3pt; }
+  .book td.key { color: var(--muted); }
+  .shift-keys { display: flex; gap: 4pt; flex-wrap: wrap; margin: 4pt 0 10pt; }
+  .shift-keys div { background: var(--soft); border-radius: 3pt; padding: 3pt 7pt; text-align: center; min-width: 30pt; }
+  .shift-keys b { display: block; font: 700 12pt Menlo, monospace; }
+  .shift-keys span { font: 8pt Menlo, monospace; color: var(--muted); }
+  figure { margin: 8pt 0 12pt; break-inside: avoid; }
+  figcaption { font-size: 9pt; color: var(--muted); margin-top: 3pt; }
+  .steps { counter-reset: step; list-style: none; padding-left: 0; }
+  .steps > li { counter-increment: step; padding-left: 20pt; position: relative; }
+  .steps > li::before { content: counter(step); position: absolute; left: 0; top: 0.5pt; width: 13pt; height: 13pt; border-radius: 50%; background: var(--ink); color: #fff; font: 700 8pt/13pt "Avenir Next", sans-serif; text-align: center; }
+  .keep { break-inside: avoid; }
+  .ref h2 { margin-top: 0; }
+</style>
+</head>
+<body>
+
+<!-- ============================== COVER ============================== -->
+<section class="cover">
+  <div>
+    <div class="part-label">Theory and user guide</div>
+    <h1>Four-Tone Code</h1>
+    <p class="lead">A way to turn text into short tones, each one of four pitches, so a message can be sent as sound and read back by ear, using the codebook as notes, or by the tool itself from a MIDI file, a recording or live sound.</p>
+    <div class="pitches">
+      <span class="pitch"><b style="background:var(--p1)">1</b>A3 · 220 Hz</span>
+      <span class="pitch"><b style="background:var(--p2)">2</b>E4 · 330 Hz</span>
+      <span class="pitch"><b style="background:var(--p3)">3</b>B4 · 494 Hz</span>
+      <span class="pitch"><b style="background:var(--p4)">4</b>F♯5 · 740 Hz</span>
+    </div>
+    <h3>Contents</h3>
+    <div class="toc">
+      <div class="h">Part 1 · How the code works</div>
+      <div>1. The idea</div>
+      <div>2. Four pitches</div>
+      <div>3. Three tones make 64 codes</div>
+      <div>4. Capitals and keys</div>
+      <div>5. Short codes</div>
+      <div>6. Timing and speed</div>
+      <div>7. How the tool decodes</div>
+      <div>8. Files</div>
+      <div class="h">Part 2 · User manual</div>
+      <div>9. Getting started</div>
+      <div>10. Encode</div>
+      <div>11. Decode</div>
+      <div>12. Codebook and Practice</div>
+      <div>13. Learning to decode by ear</div>
+      <div>14. Troubleshooting</div>
+      <div class="h">Quick reference card</div>
+    </div>
+  </div>
+  <div class="note">The tool is a single page, <code>four-tone-code.html</code>. Open it from your computer in Chrome, Edge or Firefox, or use the published page on claude.ai. The microphone only works in the local file.</div>
+</section>
+
+<!-- ============================== PART 1 ============================== -->
+<section class="part">
+  <div class="part-label">Part 1</div>
+  <div class="part-title">How the code works</div>
+
+  <h2>1. The idea</h2>
+  <p>Every character becomes a short sequence of tones. There are only four different tones, so the whole code fits on one page of notes, and a listener can work out a message without any device: identify each tone as 1, 2, 3 or 4, then look the group up.</p>
+  <p>Three tones per character give 4 × 4 × 4 = 64 codes. That covers the English alphabet, the digits, space, punctuation and a few control keys. With Shift, it covers every character on a US keyboard.</p>
+
+  <h2>2. Four pitches</h2>
+  <p>The default pitch set is a stack of musical fifths: each pitch is one and a half times the frequency of the one below.</p>
+  <table>
+    <tr><th>Tone</th><th>Note</th><th>Frequency</th><th>MIDI note</th></tr>
+    <tr><td><span class="dot" style="background:var(--p1)"></span><b>1</b></td><td>A3</td><td class="num">220 Hz</td><td class="num">57</td></tr>
+    <tr><td><span class="dot" style="background:var(--p2)"></span><b>2</b></td><td>E4</td><td class="num">330 Hz</td><td class="num">64</td></tr>
+    <tr><td><span class="dot" style="background:var(--p3)"></span><b>3</b></td><td>B4</td><td class="num">494 Hz</td><td class="num">71</td></tr>
+    <tr><td><span class="dot" style="background:var(--p4)"></span><b>4</b></td><td>F♯5</td><td class="num">740 Hz</td><td class="num">78</td></tr>
+  </table>
+  <p><b>Why fifths.</b> The pitches are far apart, so they're easy to tell apart. None of them is a whole-number multiple of another (the ratios are 1.5, 2.25 and 3.4), and none is an octave of another. Real instruments and speakers add overtones at 2×, 3×, 4× a note's frequency; with fifths, those overtones never land on another tone of the set, so they can't be mistaken for it, by the ear or by the decoder.</p>
+  <p><b>Do–mi–sol–do'</b> (C4 E4 G4 C5, 262 / 330 / 392 / 523 Hz) is the alternative set. It sounds like a familiar major chord, which makes it easier to remember, but its top note is exactly an octave above its bottom note. Small speakers can make C4's first overtone (at C5's frequency) louder than C4 itself. The decoder handles this with an <b>octave rule</b>: if C5 seems to win but there's real energy at C4, the tone is C4. A true C5 has nothing an octave below it. In testing on a simulated phone speaker, the rule took errors from 263 in 400 characters to none.</p>
+
+  <div class="keep">
+  <h2>3. Three tones make 64 codes</h2>
+  <p>A character's three tones are read like coordinates: <b>the 1st tone picks the table, the 2nd the row, the 3rd the column.</b> For example, H is in table 1, row 2, column 4, so H = <span class="d1">1</span> <span class="d2">2</span> <span class="d4">4</span>.</p>
+  <div class="books">
+    <div class="book"><table><caption>1xx <span>A–P</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+      <tr><th>2</th><td>E</td><td>F</td><td>G</td><td>H</td></tr>
+      <tr><th>3</th><td>I</td><td>J</td><td>K</td><td>L</td></tr>
+      <tr><th>4</th><td>M</td><td>N</td><td>O</td><td>P</td></tr></table></div>
+    <div class="book"><table><caption>2xx <span>Q–Z, space, punct.</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>Q</td><td>R</td><td>S</td><td>T</td></tr>
+      <tr><th>2</th><td>U</td><td>V</td><td>W</td><td>X</td></tr>
+      <tr><th>3</th><td>Y</td><td>Z</td><td>␣</td><td>.</td></tr>
+      <tr><th>4</th><td>,</td><td>?</td><td>!</td><td>'</td></tr></table></div>
+    <div class="book"><table><caption>3xx <span>digits, math</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+      <tr><th>2</th><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+      <tr><th>3</th><td>8</td><td>9</td><td>+</td><td>-</td></tr>
+      <tr><th>4</th><td>*</td><td>/</td><td>=</td><td>%</td></tr></table></div>
+    <div class="book"><table><caption>4xx <span>symbols, keys</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>(</td><td>)</td><td>[</td><td>]</td></tr>
+      <tr><th>2</th><td>"</td><td>:</td><td>;</td><td>`</td></tr>
+      <tr><th>3</th><td>@</td><td>#</td><td>$</td><td>\</td></tr>
+      <tr><th>4</th><td class="key">⇧</td><td class="key">⇪</td><td class="key">↵</td><td class="key">∎</td></tr></table></div>
+  </div>
+  </div>
+  <p>The layout follows a few simple rules, so it's easier to remember:</p>
+  <ul>
+    <li><b>Letters in alphabetical order</b>, four to a row: A–P fill table 1, Q–Z start table 2.</li>
+    <li><b>Space and sentence punctuation right after Z</b> (space = 233), because they're used with words.</li>
+    <li><b>Digits in order, then a calculator</b>: <code>+ - * / = %</code>.</li>
+    <li><b>Table 4:</b> bracket pairs with the opening bracket first, the remaining punctuation keys, <code>@ # $</code> in keyboard order, and the four control keys in the last row.</li>
+  </ul>
+
+  <h2>4. Capitals and keys</h2>
+  <p>Letters are lowercase by default, as on a keyboard. Four control keys change how the next characters are read:</p>
+  <table class="wide">
+    <tr><th>Key</th><th>3 tones</th><th>Short</th><th>Effect</th></tr>
+    <tr><td>⇧ Shift</td><td class="mono">441</td><td class="mono">41</td><td>The next letter is a capital, or the next key gives its upper symbol (⇧ 7 = &amp;). Lasts for one key.</td></tr>
+    <tr><td>⇪ Caps Lock</td><td class="mono">442</td><td class="mono">42</td><td>All letters are capitals until it's sent again.</td></tr>
+    <tr><td>↵ Enter</td><td class="mono">443</td><td class="mono">43</td><td>A new line.</td></tr>
+    <tr><td>∎ End of message</td><td class="mono">444</td><td class="mono">44</td><td>Marks the end, so a listener knows the message is complete. Also turns Caps Lock off.</td></tr>
+  </table>
+  <p><b>Choosing Shift or Caps Lock.</b> For a single capital, like the H in "Hello", the tool sends Shift. For a run of capitals, like "NASA", it sends Caps Lock once at the start. Either way, it costs one extra symbol.</p>
+  <p><b>Shift symbols.</b> Nine symbols have no code of their own. They're sent as Shift plus the key they share on a US keyboard:</p>
+  <div class="shift-keys">
+    <div><b>^</b><span>⇧ 6</span></div><div><b>&amp;</b><span>⇧ 7</span></div><div><b>~</b><span>⇧ `</span></div>
+    <div><b>_</b><span>⇧ -</span></div><div><b>{</b><span>⇧ [</span></div><div><b>}</b><span>⇧ ]</span></div>
+    <div><b>|</b><span>⇧ \</span></div><div><b>&lt;</b><span>⇧ ,</span></div><div><b>&gt;</b><span>⇧ .</span></div>
+  </div>
+  <p>Shift on any other key also works like a keyboard (⇧ 1 = !), but those symbols already have their own shorter code, so the tool never sends them that way.</p>
+</section>
+
+<section>
+  <h2>5. Short codes</h2>
+  <p>With <b>"3 tones only" turned off</b>, the most common characters also get shorter codes, so messages play faster. The fewer tones, the more common the character, following the classic frequency order of English letters, "etaoin shrdlu":</p>
+  <div class="books two">
+    <div class="book"><table><caption>1 tone <span>space, E, T, A</span></caption>
+      <tr><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><td>␣</td><td>E</td><td>T</td><td>A</td></tr></table></div>
+    <div class="book"><table><caption>2 tones <span>letters, then keys</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>O</td><td>I</td><td>N</td><td>S</td></tr>
+      <tr><th>2</th><td>H</td><td>R</td><td>D</td><td>L</td></tr>
+      <tr><th>3</th><td>C</td><td>U</td><td>M</td><td>W</td></tr>
+      <tr><th>4</th><td class="key">⇧</td><td class="key">⇪</td><td class="key">↵</td><td class="key">∎</td></tr></table></div>
+  </div>
+  <ul>
+    <li><b>Every character keeps its 3-tone code.</b> E is <code>2</code> for short or <code>212</code> in full, and the tool accepts both. The encoder always sends the shortest code.</li>
+    <li><b>How a listener knows how long a symbol is:</b> by timing. The silence between symbols is much longer than the silence between tones inside a symbol.</li>
+    <li><b>Speed:</b> the 1,000-character sample passage takes 3.10 tones per character with "3 tones only", and 1.82 with short codes: about 28% less time.</li>
+    <li><b>The trade-off:</b> with fixed 3-tone symbols, a missed tone shows up as an error (<code>¿</code>). With short codes, the leftover tones may form another valid character, so the mistake can pass unnoticed. That's why "3 tones only" is the default.</li>
+    <li><b>Compatibility:</b> both modes share the same 3-tone table, so a "3 tones only" message decodes correctly on either setting.</li>
+  </ul>
+
+  <h2>6. Timing and speed</h2>
+  <p>Three durations define the rhythm: how long each <b>tone</b> lasts, the <b>gap inside a symbol</b> between its tones, and the longer <b>gap between symbols</b>. The long gap is what groups tones into characters.</p>
+  <figure>
+    <svg viewBox="0 0 660 176" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Avenir Next, Helvetica Neue, sans-serif">
+      <g font-size="10" fill="#56655F" text-anchor="end">
+        <text x="30" y="37">4</text><text x="30" y="61">3</text><text x="30" y="85">2</text><text x="30" y="109">1</text>
+      </g>
+      <g stroke="#E1E7E5">
+        <line x1="40" y1="33" x2="628" y2="33"/><line x1="40" y1="57" x2="628" y2="57"/>
+        <line x1="40" y1="81" x2="628" y2="81"/><line x1="40" y1="105" x2="628" y2="105"/>
+      </g>
+      <!-- ⇧ 441 -->
+      <rect x="40" y="26" width="37.5" height="14" rx="2" fill="#CF4A33"/>
+      <rect x="90" y="26" width="37.5" height="14" rx="2" fill="#CF4A33"/>
+      <rect x="140" y="98" width="37.5" height="14" rx="2" fill="#3949A3"/>
+      <!-- h 124 -->
+      <rect x="265" y="98" width="37.5" height="14" rx="2" fill="#3949A3"/>
+      <rect x="315" y="74" width="37.5" height="14" rx="2" fill="#12837A"/>
+      <rect x="365" y="26" width="37.5" height="14" rx="2" fill="#CF4A33"/>
+      <!-- i 131 -->
+      <rect x="490" y="98" width="37.5" height="14" rx="2" fill="#3949A3"/>
+      <rect x="540" y="50" width="37.5" height="14" rx="2" fill="#C08312"/>
+      <rect x="590" y="98" width="37.5" height="14" rx="2" fill="#3949A3"/>
+      <g font-size="12" font-weight="600" fill="#131C19" text-anchor="middle">
+        <text x="109" y="15">⇧  4 4 1</text><text x="334" y="15">h  1 2 4</text><text x="559" y="15">i  1 3 1</text>
+      </g>
+      <g stroke="#131C19" fill="none">
+        <path d="M40 124 v5 h37.5 v-5"/>
+        <path d="M77.5 124 v5 h12.5 v-5"/>
+        <path d="M177.5 124 v5 h87.5 v-5"/>
+      </g>
+      <g font-size="10" fill="#131C19">
+        <text x="40" y="146">tone</text><text x="40" y="159" fill="#56655F">150 ms</text>
+        <text x="84" y="172" text-anchor="start">↑ gap in a symbol, 50 ms</text>
+        <text x="221" y="146" text-anchor="middle">gap between symbols</text><text x="221" y="159" text-anchor="middle" fill="#56655F">350 ms</text>
+      </g>
+      <line x1="84" y1="131" x2="84" y2="162" stroke="#131C19" stroke-dasharray="2 2"/>
+    </svg>
+    <figcaption>"Hi" in "3 tones only" mode at Practiced speed: Shift (441), h (124), i (131). Rows are the four pitches; time runs left to right.</figcaption>
+  </figure>
+  <table class="wide num">
+    <tr><th>Speed</th><th>Tone / gap in / gap between</th><th>1,000-character sample, 3 tones only</th><th>With short codes</th><th>By ear?</th></tr>
+    <tr><td>Beginner</td><td>250 / 80 / 600 ms</td><td>26 min · 38 chars/min</td><td>19 min · 53 chars/min</td><td>Yes: start here</td></tr>
+    <tr><td>Practiced (default)</td><td>150 / 50 / 350 ms</td><td>15.5 min · 64 chars/min</td><td>11.2 min · 89 chars/min</td><td>Yes</td></tr>
+    <tr><td>Fast (2×)</td><td>75 / 25 / 175 ms</td><td>7.8 min</td><td>5.6 min</td><td>With practice</td></tr>
+    <tr><td>Very fast (4×)</td><td>38 / 13 / 88 ms</td><td>3.9 min</td><td>2.8 min</td><td>Hard</td></tr>
+    <tr><td>Expert (8×)</td><td>19 / 6 / 44 ms</td><td>117 s</td><td>85 s</td><td>Tool only, in practice</td></tr>
+    <tr><td>Limit of hearing (16×)</td><td>9 / 3 / 22 ms</td><td>57 s</td><td>41 s</td><td>Tool only</td></tr>
+    <tr><td>Machine only (32×)</td><td>5 / 2 / 11 ms</td><td>31 s</td><td>22 s</td><td>MIDI only</td></tr>
+    <tr><td>Machine only (64×)</td><td>2 / 1 / 5 ms</td><td>13 s</td><td>10 s</td><td>MIDI only</td></tr>
+  </table>
+  <p><b>Why 16× is the limit for sound.</b> A 9 ms tone still holds two full cycles of the lowest pitch (A3 cycles every 4.5 ms), which is about the least a pitch can be recognized from. At 32× a tone is barely one cycle and sounds like a click. MIDI files store exact 1 ms timing and note numbers, so 32× and 64× still decode perfectly from MIDI.</p>
+  <p><b>Custom timing</b> is possible: type any tone and gap lengths. Keep the gap between symbols clearly longer than the gap inside a symbol.</p>
+
+  <h2>7. How the tool decodes</h2>
+  <h3>From a MIDI file: exact</h3>
+  <p>A MIDI file holds every note's pitch and start time, so decoding is exact. Files made by the tool also carry a short tag with their pitch set, code length and timing. For other MIDI files, the tool finds the pitch set from the notes, and the symbol gaps from the biggest jump in the spacing between notes.</p>
+  <h3>From sound: step by step</h3>
+  <ol class="steps">
+    <li><b>Learn the background.</b> The first 150 ms only measure how loud the room or recording is when nothing plays.</li>
+    <li><b>Find the tones.</b> The loudness is measured every 1.5 ms. A tone starts when the sound rises clearly above the background, and ends when it falls back, or drops well below its own peak.</li>
+    <li><b>Name each tone.</b> Four narrow filters, one per pitch, measure how strong each pitch is (the Goertzel method). The strongest wins, subject to the octave rule for do–mi–sol–do'.</li>
+    <li><b>Group tones into characters.</b> After the 3rd tone, a character is complete. A group of 1 or 2 tones is complete once the next tone is overdue, judged by the time since the last tone started.</li>
+    <li><b>Separate tones that ran together.</b> Echo in a room, or MP3 compression at high speed, can fill the short gap between tones. If one sound lasts as long as two or three tones, it's counted as that many. Where its pitch changes shows which tones they were.</li>
+  </ol>
+  <p>The tool's own playback helps too: each note fades out before the next one starts, and notes are prepared a couple of seconds ahead, so playback never stutters.</p>
+  <div class="note">The listener has to know the settings: pitch set, speed and code length. If they don't match the sender's, the output is garbled. Recordings named by the tool carry their settings in the file name (see 8).</div>
+
+  <h2>8. Files</h2>
+  <table class="wide">
+    <tr><th>Format</th><th>What it's for</th></tr>
+    <tr><td><b>.mid</b></td><td>The exact message, for any speed including 32× and 64×. Plays in any music app, with the instrument you chose.</td></tr>
+    <tr><td><b>.zip</b></td><td>The same MIDI file, compressed about 12× for long messages. Decode reads it without unzipping.</td></tr>
+    <tr><td><b>.mp3</b></td><td>The actual sound (64 kbps mono), to play from any device or send as audio. Decoded from its sound, so up to 16×.</td></tr>
+  </table>
+  <p><b>File names carry the settings</b>, so a recording can be decoded without guessing:</p>
+  <p class="mono" style="background:var(--soft); padding:6pt 8pt; border-radius:3pt;">four-pitches-64-codes-listen-clo_fifths_practiced-150-50-350ms_piano_3tones.mp3</p>
+  <table class="wide">
+    <tr><th>Part</th><th>Meaning</th></tr>
+    <tr><td class="mono">four-pitches-64-codes-listen-clo</td><td>The first 32 letters and digits of the text</td></tr>
+    <tr><td class="mono">fifths</td><td>Pitch set: <code>fifths</code> or <code>chord</code> (do–mi–sol–do')</td></tr>
+    <tr><td class="mono">practiced-150-50-350ms</td><td>Speed preset, then tone / gap in a symbol / gap between symbols</td></tr>
+    <tr><td class="mono">piano</td><td>Instrument</td></tr>
+    <tr><td class="mono">3tones</td><td>"3 tones only" was on (missing = short codes used)</td></tr>
+    <tr><td class="mono">end</td><td>Ends with End of message (only if added)</td></tr>
+  </table>
+</section>
+
+<!-- ============================== PART 2 ============================== -->
+<section class="part">
+  <div class="part-label">Part 2</div>
+  <div class="part-title">User manual</div>
+
+  <h2>9. Getting started</h2>
+  <p>Open <code>four-tone-code.html</code> in Chrome, Edge or Firefox, or open the published page on claude.ai. The page has four sections:</p>
+  <table class="wide">
+    <tr><th>Section</th><th>What it does</th></tr>
+    <tr><td><b>Encode</b> (left)</td><td>Turns text into tones: play it, see it, download it.</td></tr>
+    <tr><td><b>Decode</b> (right)</td><td>Turns a file, a recording or live sound back into text.</td></tr>
+    <tr><td><b>Codebook</b></td><td>All the codes, clickable to hear.</td></tr>
+    <tr><td><b>Practice</b></td><td>A listening quiz that adapts to your weak spots.</td></tr>
+  </table>
+  <p>Click a section's title to fold or unfold it; the page remembers. The four pitch buttons at the top right play each pitch, for ear training.</p>
+  <table class="wide">
+    <tr><th></th><th>Local file</th><th>Published page</th></tr>
+    <tr><td>Downloads</td><td>.mid, .zip and .mp3 directly</td><td>Everything inside a .zip (the page may only save .zip files)</td></tr>
+    <tr><td>Microphone</td><td>Works (the browser asks for permission)</td><td>Blocked</td></tr>
+  </table>
+
+  <h2>10. Encode</h2>
+  <ol class="steps">
+    <li><b>Type your text.</b> Line breaks are sent as Enter. Characters the code can't send (for example é or emoji) are skipped and listed under the box.</li>
+    <li><b>Check the settings</b> (below). The defaults are Practiced speed, Fifths, Piano and "3 tones only".</li>
+    <li><b>Press Play</b> to hear it. The tone view highlights each character as it plays. Click any character there to hear just that one.</li>
+    <li><b>Download</b> it as .mid, .zip or .mp3. The MP3 takes a few seconds to make, and needs an internet connection the first time, to load the MP3 encoder.</li>
+  </ol>
+  <table class="wide">
+    <tr><th>Setting</th><th>What it changes</th></tr>
+    <tr><td>Speed</td><td>A preset for the three timings. Editing a timing switches to Custom.</td></tr>
+    <tr><td>Tone, Gap in a symbol, Gap between symbols</td><td>The timings in milliseconds.</td></tr>
+    <tr><td>Pitch set</td><td>Fifths (A3 E4 B4 F♯5) or Do–mi–sol–do' (C4 E4 G4 C5).</td></tr>
+    <tr><td>Instrument</td><td>How the tones sound: Piano, Flute, Glockenspiel, Marimba, Organ or Pure tone. All six decode cleanly even from a 16× MP3.</td></tr>
+    <tr><td>Ending</td><td>Adds ∎ End of message at the end.</td></tr>
+    <tr><td>Code length</td><td>"3 tones only" (default), or off to add the faster short codes.</td></tr>
+  </table>
+  <p><b>Reading the tone view.</b> Each character shows a small grid: columns are its tones in order, rows are the four pitches (4 at the top), and the coloured cell is the pitch played. Its code is printed underneath. The row of codes below the tone view has a copy button, and the line under it gives the length, tones per character and playing time.</p>
+
+  <h2>11. Decode</h2>
+  <p>Choose a <b>source</b> at the top of the section:</p>
+  <h3>File</h3>
+  <ul>
+    <li><b>A .mid or .zip made by the tool</b> decodes at once and exactly. Its settings fill in and lock, because the file carries them. <b>Play file</b> plays it and highlights each character.</li>
+    <li><b>A recording</b> (.mp3, .wav, .m4a, or a .zip holding one) is decoded from its sound. If the tool made it, the settings are read from its file name; otherwise set them yourself. <b>Decode now</b> is instant; <b>Play and decode</b> lets you listen while it decodes.</li>
+  </ul>
+  <h3>Microphone</h3>
+  <p>Press <b>Start listening</b> and play the tones near the microphone. A quiet room and a clear speaker work best; start at Beginner or Practiced. Only in the local file.</p>
+  <h3>This page</h3>
+  <p>Decodes whatever the page itself plays: Play in Encode, the Practice sounds or codebook clicks. Useful for checking a message, or for seeing the decoder at work.</p>
+  <h3>Settings and output</h3>
+  <ul>
+    <li><b>Pitch set, Speed, Code length</b> default to "As Encode". Match them to how the sound was made. The line under them says exactly what the decoder is listening for.</li>
+    <li>While listening, four bars show how strong each pitch is, and <b>Hearing</b> shows the tones of the current character.</li>
+    <li>The decoded text appears in the box. The icons in its top-right corner <b>copy</b> the text or <b>clear</b> it. Control keys show as small grey marks, and aren't copied.</li>
+    <li><code>¿</code> marks a group of tones that isn't a valid character, usually a missed or extra tone.</li>
+  </ul>
+
+  <h2>12. Codebook and Practice</h2>
+  <p><b>Codebook.</b> The 3-tone tables come first: find the table by the first tone, then the row and column. A dot on a cell means that character also has a short code. Below are the short codes, the four keys with both their codes, and the nine Shift symbols. Click any cell or key to hear it with the current Encode settings.</p>
+  <p><b>Practice.</b> It uses the Encode settings.</p>
+  <ul>
+    <li><b>Pitches:</b> hear one tone, press 1–4. Start here.</li>
+    <li><b>Characters:</b> hear one character, press its key. It moves on by itself when you're right. Choose Letters, Letters and digits, or Everything.</li>
+    <li><b>Words:</b> hear a common English word, type it, press Enter.</li>
+  </ul>
+  <p>The panel on the right shows your accuracy per pitch or character. Characters you get wrong come up more often. Progress is kept in your browser; <b>Reset</b> clears it.</p>
+
+  <h2>13. Learning to decode by ear</h2>
+  <ol class="steps">
+    <li><b>Learn the four pitches alone.</b> Use the pitch buttons and Practice › Pitches until you can name any single pitch without hearing the others.</li>
+    <li><b>Learn the first tone as a category.</b> 1 = A–P, 2 = Q–Z and punctuation, 3 = digits and math, 4 = brackets, symbols and keys.</li>
+    <li><b>Characters at Beginner speed</b>, with the codebook in front of you. Then words.</li>
+    <li><b>Speed up one step at a time</b>, only once you're consistently right.</li>
+    <li><b>Optional:</b> once 3-tone codes are easy, learn the 16 short codes and turn "3 tones only" off.</li>
+  </ol>
+  <p>For paper notes, print the quick reference card on the last page.</p>
+
+  <h2>14. Troubleshooting</h2>
+  <table class="wide">
+    <tr><th>Problem</th><th>Likely cause</th><th>Fix</th></tr>
+    <tr><td>Decoded text is garbled</td><td>Decode settings don't match the sender's</td><td>Set Pitch set, Speed and Code length to match; check the line under the settings</td></tr>
+    <tr><td>Mostly e, t, a and spaces</td><td>Short codes expected, or tones blurring together</td><td>Match Code length; try a slower speed</td></tr>
+    <tr><td>Scattered <code>¿</code> marks</td><td>Tones missed or merged: noise, echo, too fast</td><td>Quieter room, louder speaker, slower speed</td></tr>
+    <tr><td>Microphone does nothing</td><td>Published page, or permission denied</td><td>Use the local file; allow the microphone in the browser</td></tr>
+    <tr><td>MP3 download fails</td><td>The MP3 encoder couldn't load</td><td>Connect to the internet and try again</td></tr>
+    <tr><td>Page looks outdated</td><td>An older copy is cached</td><td>Reload the page</td></tr>
+  </table>
+</section>
+
+<!-- ============================== REFERENCE CARD ============================== -->
+<section class="part ref">
+  <h2>Quick reference card</h2>
+  <p><span class="dot" style="background:var(--p1)"></span><b>1</b> A3 220 Hz &nbsp; <span class="dot" style="background:var(--p2)"></span><b>2</b> E4 330 Hz &nbsp; <span class="dot" style="background:var(--p3)"></span><b>3</b> B4 494 Hz &nbsp; <span class="dot" style="background:var(--p4)"></span><b>4</b> F♯5 740 Hz &nbsp;·&nbsp; Do–mi–sol–do': C4 E4 G4 C5</p>
+  <p>1st tone = table · 2nd = row · 3rd = column · H = 1 2 4 · letters are lowercase unless ⇧ or ⇪</p>
+  <div class="books">
+    <div class="book"><table><caption>1xx <span>A–P</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>A</td><td>B</td><td>C</td><td>D</td></tr>
+      <tr><th>2</th><td>E</td><td>F</td><td>G</td><td>H</td></tr>
+      <tr><th>3</th><td>I</td><td>J</td><td>K</td><td>L</td></tr>
+      <tr><th>4</th><td>M</td><td>N</td><td>O</td><td>P</td></tr></table></div>
+    <div class="book"><table><caption>2xx <span>Q–Z, space, punct.</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>Q</td><td>R</td><td>S</td><td>T</td></tr>
+      <tr><th>2</th><td>U</td><td>V</td><td>W</td><td>X</td></tr>
+      <tr><th>3</th><td>Y</td><td>Z</td><td>␣</td><td>.</td></tr>
+      <tr><th>4</th><td>,</td><td>?</td><td>!</td><td>'</td></tr></table></div>
+    <div class="book"><table><caption>3xx <span>digits, math</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>0</td><td>1</td><td>2</td><td>3</td></tr>
+      <tr><th>2</th><td>4</td><td>5</td><td>6</td><td>7</td></tr>
+      <tr><th>3</th><td>8</td><td>9</td><td>+</td><td>-</td></tr>
+      <tr><th>4</th><td>*</td><td>/</td><td>=</td><td>%</td></tr></table></div>
+    <div class="book"><table><caption>4xx <span>symbols, keys</span></caption>
+      <tr><th></th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+      <tr><th>1</th><td>(</td><td>)</td><td>[</td><td>]</td></tr>
+      <tr><th>2</th><td>"</td><td>:</td><td>;</td><td>`</td></tr>
+      <tr><th>3</th><td>@</td><td>#</td><td>$</td><td>\</td></tr>
+      <tr><th>4</th><td class="key">⇧</td><td class="key">⇪</td><td class="key">↵</td><td class="key">∎</td></tr></table></div>
+  </div>
+  <table class="wide">
+    <tr><th>Keys</th><th>3 tones</th><th>Short</th><th></th></tr>
+    <tr><td>⇧ Shift</td><td class="mono">441</td><td class="mono">41</td><td>next letter capital, or a key's upper symbol</td></tr>
+    <tr><td>⇪ Caps Lock</td><td class="mono">442</td><td class="mono">42</td><td>all letters capital until sent again</td></tr>
+    <tr><td>↵ Enter</td><td class="mono">443</td><td class="mono">43</td><td>new line</td></tr>
+    <tr><td>∎ End of message</td><td class="mono">444</td><td class="mono">44</td><td>also turns Caps Lock off</td></tr>
+  </table>
+  <h3>With Shift</h3>
+  <div class="shift-keys">
+    <div><b>^</b><span>⇧ 6</span></div><div><b>&amp;</b><span>⇧ 7</span></div><div><b>~</b><span>⇧ `</span></div>
+    <div><b>_</b><span>⇧ -</span></div><div><b>{</b><span>⇧ [</span></div><div><b>}</b><span>⇧ ]</span></div>
+    <div><b>|</b><span>⇧ \</span></div><div><b>&lt;</b><span>⇧ ,</span></div><div><b>&gt;</b><span>⇧ .</span></div>
+  </div>
+  <h3>Short codes <span style="font-weight:400; color:var(--muted); font-size:10pt">(only with "3 tones only" off)</span></h3>
+  <table class="num">
+    <tr><th>1 tone</th><td class="mono">1 ␣ · 2 e · 3 t · 4 a</td></tr>
+    <tr><th>2 tones</th><td class="mono">11 o · 12 i · 13 n · 14 s · 21 h · 22 r · 23 d · 24 l · 31 c · 32 u · 33 m · 34 w · 41 ⇧ · 42 ⇪ · 43 ↵ · 44 ∎</td></tr>
+  </table>
+  <h3>Speeds <span style="font-weight:400; color:var(--muted); font-size:10pt">(tone / gap in a symbol / gap between symbols, ms)</span></h3>
+  <p class="mono">Beginner 250/80/600 · Practiced 150/50/350 · 2× 75/25/175 · 4× 38/13/88 · 8× 19/6/44 · 16× 9/3/22 · 32× 5/2/11 · 64× 2/1/5</p>
+</section>
+
+</body>
+</html>
