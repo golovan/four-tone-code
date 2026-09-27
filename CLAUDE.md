@@ -91,6 +91,17 @@ the microphone, or the page's own playback back into text.
 - Notes are scheduled about 2 s ahead in batches. Building thousands of nodes at once
   froze the page, and the ScriptProcessor-based live decoder lost audio.
 
+## The guide (PDF)
+- `Four-Tone-Code-Guide.pdf` is printed from `docs/guide.html` (A4, 10 pages). Part 1 covers the
+  theory, Part 2 is the user manual, and it ends with a reference card. Update the HTML when the
+  code, defaults or UI change, then reprint.
+- Reprint with headless Chrome, using a throwaway profile. Chrome writes the PDF but doesn't exit,
+  so wait for the file, then kill that one process:
+  `"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --no-first-run --user-data-dir=<tmp> --no-pdf-header-footer --print-to-pdf=<out.pdf> file://<abs>/docs/guide.html &`
+- To check pages visually, render them to PNG with a small Swift PDFKit script, then read the
+  images. `pdftoppm`/reportlab aren't installed, and the browser pane downloads PDFs instead of
+  showing them.
+
 ## Editing and publishing
 - `four-tone-code.html` in this folder is the only source. It has a doctype/head/body wrapper
   (the first 6 lines, plus the `</head>`, `<body>`, `</body>`, `</html>` lines) that the
